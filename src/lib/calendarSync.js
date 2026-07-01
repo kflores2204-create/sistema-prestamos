@@ -7,6 +7,7 @@
  * como Pagado.
  */
 import { supabase } from './supabase'
+import { montoConRecargo, tieneRecargoAplicado } from './prestamoUtils'
 
 const CALENDAR_SUMMARY = 'Cobros - Prestamos'
 const COLOR = { ATRASADO: '11', PRONTO: '5', FUTURO: '9' } // ids de color de Google Calendar
@@ -80,9 +81,17 @@ export async function syncCuota(cuota, prestamo) {
     return
   }
 
+  const montoAviso = montoConRecargo(cuota, prestamo.recargo_pct)
+  const conRecargo = tieneRecargoAplicado(cuota, prestamo.recargo_pct)
+
   const body = {
-    summary: `Cobrar S/ ${cuota.monto} - ${prestamo.cliente_nombre} (${prestamo.cuenta_nombre})`,
-    description: `Cuota ${cuota.numero_cuota} de ${prestamo.num_cuotas} - Prestamo ${prestamo.codigo}`,
+    summary: conRecargo
+      ? `Cobrar S/ ${montoAviso.toFixed(2)} (incluye recargo) - ${prestamo.cliente_nombre} (${prestamo.cuenta_nombre})`
+      : `Cobrar S/ ${cuota.monto} - ${prestamo.cliente_nombre} (${prestamo.cuenta_nombre})`,
+    description: conRecargo
+      ? `Cuota ${cuota.numero_cuota} de ${prestamo.num_cuotas} - Prestamo ${prestamo.codigo}. ` +
+        `Monto original S/ ${cuota.monto}, mas recargo por atraso del ${(prestamo.recargo_pct * 100).toFixed(0)}%.`
+      : `Cuota ${cuota.numero_cuota} de ${prestamo.num_cuotas} - Prestamo ${prestamo.codigo}`,
     start: { date: cuota.fecha_vencimiento },
     end: { date: cuota.fecha_vencimiento },
     colorId: colorFor(cuota.fecha_vencimiento),
@@ -116,7 +125,7 @@ export async function syncCuota(cuota, prestamo) {
 export async function syncTodo() {
   const { data: cuotas, error } = await supabase
     .from('cuotas')
-    .select('*, prestamos(codigo, num_cuotas, cliente:clientes!prestamos_cliente_id_fkey(nombre), cuenta:cuentas(nombre))')
+    .select('*, prestamos(codigo, num_cuotas, recargo_pct, cliente:clientes!prestamos_cliente_id_fkey(nombre), cuenta:cuentas(nombre))')
   if (error) throw error
 
   let procesadas = 0
@@ -125,6 +134,7 @@ export async function syncTodo() {
     const prestamo = {
       codigo: c.prestamos.codigo,
       num_cuotas: c.prestamos.num_cuotas,
+      recargo_pct: c.prestamos.recargo_pct,
       cliente_nombre: c.prestamos.cliente?.nombre || 'Cliente',
       cuenta_nombre: c.prestamos.cuenta?.nombre || '',
     }
