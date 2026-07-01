@@ -8,6 +8,7 @@ import Prestamos from './pages/Prestamos'
 import NuevoPrestamo from './pages/NuevoPrestamo'
 import Cronograma from './pages/Cronograma'
 import FlujoCajaArequipa from './pages/FlujoCajaArequipa'
+import Clientes from './pages/Clientes'
 import './styles.css'
 
 export default function App() {
@@ -45,6 +46,7 @@ export default function App() {
             <NavLink to="/prestamos/Caja Arequipa">Prestamos Caja Arequipa</NavLink>
             <NavLink to="/prestamos/Intereses">Prestamos Intereses</NavLink>
             <NavLink to="/nuevo">Nuevo Prestamo</NavLink>
+            <NavLink to="/clientes">Clientes</NavLink>
             <NavLink to="/cronograma">Cronograma Cliente</NavLink>
             <NavLink to="/flujo-caja-arequipa">Flujo Caja Arequipa</NavLink>
           </nav>
@@ -60,6 +62,7 @@ export default function App() {
             <Route path="/" element={<Dashboard />} />
             <Route path="/prestamos/:cuenta" element={<Prestamos />} />
             <Route path="/nuevo" element={<NuevoPrestamo />} />
+            <Route path="/clientes" element={<Clientes />} />
             <Route path="/cronograma" element={<Cronograma />} />
             <Route path="/flujo-caja-arequipa" element={<FlujoCajaArequipa />} />
             <Route path="*" element={<Navigate to="/" />} />
