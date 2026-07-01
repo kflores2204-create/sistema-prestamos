@@ -4,12 +4,15 @@ import { supabase } from '../lib/supabase'
 import { syncCuota } from '../lib/calendarSync'
 
 const money = (n) => `S/. ${Number(n || 0).toLocaleString('es-PE', { minimumFractionDigits: 2 })}`
+const fechaCorta = (d) => new Date(d).toLocaleDateString('es-PE')
 const estadoClass = (e) => e.toLowerCase().replace(' ', '-')
 const toDateInput = (d) => new Date(d).toISOString().slice(0, 10)
+const ESTADOS = ['Todos', 'ACTIVO', 'EN PROCESO', 'ATRASADO', 'FINALIZADO']
 
 export default function Prestamos() {
-  const { cuenta } = useParams() // 'BBVA' | 'Caja Arequipa' | 'Intereses'
+  const { cuenta } = useParams()
   const [prestamos, setPrestamos] = useState([])
+  const [filtroEstado, setFiltroEstado] = useState('Todos')
   const [expanded, setExpanded] = useState(null)
   const [cuotasDetalle, setCuotasDetalle] = useState([])
   const [editando, setEditando] = useState(false)
@@ -25,16 +28,25 @@ export default function Prestamos() {
     setPrestamos(data || [])
   }
 
-  useEffect(() => { cargar(); setExpanded(null); setEditando(false) }, [cuenta])
+  useEffect(() => { cargar(); cerrarDrawer() }, [cuenta])
+
+  function cerrarDrawer() {
+    setExpanded(null)
+    setEditando(false)
+  }
 
   async function toggleCuota(cuota, prestamo) {
     const nuevoEstado = cuota.estado === 'Pagado' ? 'Pendiente' : 'Pagado'
     const { data: updated } = await supabase
       .from('cuotas').update({ estado: nuevoEstado }).eq('id', cuota.id).select().single()
-    await syncCuota(updated, {
-      codigo: prestamo.codigo, num_cuotas: prestamo.num_cuotas,
-      cliente_nombre: prestamo.cliente, cuenta_nombre: prestamo.cuenta,
-    })
+    try {
+      await syncCuota(updated, {
+        codigo: prestamo.codigo, num_cuotas: prestamo.num_cuotas,
+        cliente_nombre: prestamo.cliente, cuenta_nombre: prestamo.cuenta,
+      })
+    } catch (err) {
+      alert('El pago se guardo, pero no se pudo sincronizar con Calendar: ' + err.message)
+    }
     cargar()
     abrirDetalle(expanded.id)
   }
@@ -43,8 +55,7 @@ export default function Prestamos() {
     const { data: p } = await supabase.from('v_prestamo_resumen').select('*').eq('id', prestamoId).single()
     setExpanded(p)
     setEditando(false)
-    const { data } = await supabase
-      .from('cuotas').select('*').eq('prestamo_id', prestamoId).order('numero_cuota')
+    const { data } = await supabase.from('cuotas').select('*').eq('prestamo_id', prestamoId).order('numero_cuota')
     setCuotasDetalle(data || [])
   }
 
@@ -63,10 +74,8 @@ export default function Prestamos() {
     e.preventDefault()
     setGuardando(true)
     try {
-      // actualizar nombre de cliente si cambio
       await supabase.from('clientes').update({ nombre: formEdit.cliente }).eq('id', expanded.cliente_id)
 
-      // actualizar datos del prestamo
       const { data: prestamoActualizado, error: errP } = await supabase
         .from('prestamos')
         .update({
@@ -80,7 +89,6 @@ export default function Prestamos() {
         .single()
       if (errP) throw errP
 
-      // como cambiaron capital/fecha/cuotas, se regeneran las cuotas desde cero
       await supabase.from('cuotas').delete().eq('prestamo_id', expanded.id)
       const nuevasCuotas = []
       const fechaBase = new Date(formEdit.fecha_prestamo + 'T00:00:00')
@@ -107,13 +115,29 @@ export default function Prestamos() {
   async function eliminarPrestamo() {
     if (!confirm(`Seguro que quieres eliminar el prestamo ${expanded.codigo} de ${expanded.cliente}? Esta accion no se puede deshacer.`)) return
     await supabase.from('prestamos').delete().eq('id', expanded.id)
-    setExpanded(null)
+    cerrarDrawer()
     cargar()
   }
 
+  const filtrados = prestamos.filter((p) => filtroEstado === 'Todos' || p.estado === filtroEstado)
+
   return (
     <div>
-      <h2 style={{ color: 'var(--navy)' }}>Prestamos {cuenta}</h2>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+        <h2 style={{ color: 'var(--navy)', margin: 0 }}>Prestamos {cuenta}</h2>
+        <div className="filtro-chips">
+          {ESTADOS.map((e) => (
+            <button
+              key={e}
+              className={`chip ${filtroEstado === e ? 'chip-active' : ''}`}
+              onClick={() => setFiltroEstado(e)}
+            >
+              {e === 'Todos' ? 'Todos' : e.charAt(0) + e.slice(1).toLowerCase()}
+            </button>
+          ))}
+        </div>
+      </div>
+
       <table>
         <thead>
           <tr>
@@ -122,78 +146,100 @@ export default function Prestamos() {
           </tr>
         </thead>
         <tbody>
-          {prestamos.map((p) => (
+          {filtrados.map((p) => (
             <tr key={p.id} onClick={() => abrirDetalle(p.id)} style={{ cursor: 'pointer' }}>
               <td>{p.codigo}</td>
               <td>{p.cliente}</td>
-              <td>{new Date(p.fecha_prestamo).toLocaleDateString('es-PE')}</td>
+              <td>{fechaCorta(p.fecha_prestamo)}</td>
               <td>{money(p.capital)}</td>
               <td>{money(p.total_a_pagar)}</td>
               <td>{money(p.saldo_pendiente)}</td>
               <td><span className={`badge ${estadoClass(p.estado)}`}>{p.estado}</span></td>
             </tr>
           ))}
+          {filtrados.length === 0 && (
+            <tr><td colSpan={7} style={{ textAlign: 'center', color: 'var(--muted)' }}>No hay prestamos con este estado.</td></tr>
+          )}
         </tbody>
       </table>
 
-      {expanded && !editando && (
-        <div style={{ marginTop: 24 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <h3 style={{ color: 'var(--navy)' }}>Cuotas de {expanded.cliente} ({expanded.codigo})</h3>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button className="btn secondary" onClick={empezarEdicion}>Editar</button>
-              <button className="btn" style={{ background: 'var(--red-bg)', color: 'var(--red)' }} onClick={eliminarPrestamo}>Eliminar</button>
+      {expanded && (
+        <>
+          <div className="drawer-backdrop" onClick={cerrarDrawer} />
+          <div className="drawer">
+            <div className="drawer-header">
+              <div>
+                <h3 style={{ margin: 0, color: 'var(--navy)' }}>{expanded.cliente}</h3>
+                <p style={{ margin: '2px 0 0', color: 'var(--muted)', fontSize: 13 }}>{expanded.codigo} · {expanded.cuenta}</p>
+              </div>
+              <button className="drawer-close" onClick={cerrarDrawer}>✕</button>
             </div>
-          </div>
-          <table>
-            <thead><tr><th>N Cuota</th><th>Fecha</th><th>Monto</th><th>Estado</th></tr></thead>
-            <tbody>
-              {cuotasDetalle.map((c) => (
-                <tr key={c.id}>
-                  <td>{c.numero_cuota}</td>
-                  <td>{new Date(c.fecha_vencimiento).toLocaleDateString('es-PE')}</td>
-                  <td>{money(c.monto)}</td>
-                  <td>
-                    <span className={`badge ${c.estado.toLowerCase()}`} onClick={() => toggleCuota(c, expanded)}>
-                      {c.estado} (clic para cambiar)
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
 
-      {expanded && editando && (
-        <div style={{ marginTop: 24 }}>
-          <h3 style={{ color: 'var(--navy)' }}>Editar prestamo {expanded.codigo}</h3>
-          <p style={{ color: 'var(--muted)', fontSize: 13 }}>
-            Nota: si cambias capital, fecha o numero de cuotas, el cronograma de cuotas se
-            recalcula desde cero (todas quedan como Pendiente).
-          </p>
-          <form onSubmit={guardarEdicion} style={{ maxWidth: 420, display: 'flex', flexDirection: 'column', gap: 14 }}>
-            <label>Cliente
-              <input className="input" required value={formEdit.cliente} onChange={(e) => setFormEdit((f) => ({ ...f, cliente: e.target.value }))} />
-            </label>
-            <label>Fecha de prestamo
-              <input className="input" type="date" required value={formEdit.fecha_prestamo} onChange={(e) => setFormEdit((f) => ({ ...f, fecha_prestamo: e.target.value }))} />
-            </label>
-            <label>Capital (S/.)
-              <input className="input" type="number" min="0" step="0.01" required value={formEdit.capital} onChange={(e) => setFormEdit((f) => ({ ...f, capital: e.target.value }))} />
-            </label>
-            <label>% Interes
-              <input className="input" type="number" min="0" step="0.01" required value={formEdit.tasa_interes} onChange={(e) => setFormEdit((f) => ({ ...f, tasa_interes: e.target.value }))} />
-            </label>
-            <label>Numero de cuotas
-              <input className="input" type="number" min="1" max="6" required value={formEdit.num_cuotas} onChange={(e) => setFormEdit((f) => ({ ...f, num_cuotas: e.target.value }))} />
-            </label>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button className="btn" type="submit" disabled={guardando}>{guardando ? 'Guardando...' : 'Guardar cambios'}</button>
-              <button className="btn secondary" type="button" onClick={() => setEditando(false)}>Cancelar</button>
-            </div>
-          </form>
-        </div>
+            {!editando && (
+              <>
+                <div className="drawer-info">
+                  {expanded.cliente_dni && <p><b>DNI Cliente:</b> {expanded.cliente_dni}</p>}
+                  {expanded.aval_nombre && <p><b>Aval / Recomendado:</b> {expanded.aval_nombre}{expanded.aval_dni ? ` (${expanded.aval_dni})` : ''}</p>}
+                  <p><b>Capital:</b> {money(expanded.capital)} &nbsp; <b>Total a pagar:</b> {money(expanded.total_a_pagar)}</p>
+                  <p><b>Saldo pendiente:</b> {money(expanded.saldo_pendiente)} &nbsp; <span className={`badge ${estadoClass(expanded.estado)}`}>{expanded.estado}</span></p>
+                </div>
+
+                <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+                  <button className="btn secondary" onClick={empezarEdicion}>Editar</button>
+                  <button className="btn" style={{ background: 'var(--red-bg)', color: 'var(--red)' }} onClick={eliminarPrestamo}>Eliminar</button>
+                </div>
+
+                <table>
+                  <thead><tr><th>N</th><th>Fecha</th><th>Monto</th><th>Estado</th></tr></thead>
+                  <tbody>
+                    {cuotasDetalle.map((c) => (
+                      <tr key={c.id}>
+                        <td>{c.numero_cuota}</td>
+                        <td>{fechaCorta(c.fecha_vencimiento)}</td>
+                        <td>{money(c.monto)}</td>
+                        <td>
+                          <span className={`badge ${c.estado.toLowerCase()}`} onClick={() => toggleCuota(c, expanded)}>
+                            {c.estado}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </>
+            )}
+
+            {editando && (
+              <div>
+                <p style={{ color: 'var(--muted)', fontSize: 13 }}>
+                  Nota: si cambias capital, fecha o numero de cuotas, el cronograma se
+                  recalcula desde cero (todas quedan como Pendiente).
+                </p>
+                <form onSubmit={guardarEdicion} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                  <label>Cliente
+                    <input className="input" required value={formEdit.cliente} onChange={(e) => setFormEdit((f) => ({ ...f, cliente: e.target.value }))} />
+                  </label>
+                  <label>Fecha de prestamo
+                    <input className="input" type="date" required value={formEdit.fecha_prestamo} onChange={(e) => setFormEdit((f) => ({ ...f, fecha_prestamo: e.target.value }))} />
+                  </label>
+                  <label>Capital (S/.)
+                    <input className="input" type="number" min="0" step="0.01" required value={formEdit.capital} onChange={(e) => setFormEdit((f) => ({ ...f, capital: e.target.value }))} />
+                  </label>
+                  <label>% Interes
+                    <input className="input" type="number" min="0" step="0.01" required value={formEdit.tasa_interes} onChange={(e) => setFormEdit((f) => ({ ...f, tasa_interes: e.target.value }))} />
+                  </label>
+                  <label>Numero de cuotas
+                    <input className="input" type="number" min="1" max="6" required value={formEdit.num_cuotas} onChange={(e) => setFormEdit((f) => ({ ...f, num_cuotas: e.target.value }))} />
+                  </label>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button className="btn" type="submit" disabled={guardando}>{guardando ? 'Guardando...' : 'Guardar cambios'}</button>
+                    <button className="btn secondary" type="button" onClick={() => setEditando(false)}>Cancelar</button>
+                  </div>
+                </form>
+              </div>
+            )}
+          </div>
+        </>
       )}
     </div>
   )
