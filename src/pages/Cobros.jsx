@@ -80,23 +80,23 @@ export default function Cobros() {
         <div className="value">{money(totalDelDia)}</div>
       </div>
 
-      <table>
+      <table className="table-cards">
         <thead>
           <tr><th>Cliente</th><th>DNI</th><th>Cuenta</th><th>Codigo</th><th>Fecha</th><th>Monto</th><th></th></tr>
         </thead>
         <tbody>
           {cuotas.map((c) => (
             <tr key={c.id}>
-              <td>{c.prestamos.cliente?.nombre || '—'}</td>
-              <td>{c.prestamos.cliente?.dni || '—'}</td>
-              <td>{c.prestamos.cuenta?.nombre || '—'}</td>
-              <td>{c.prestamos.codigo}</td>
-              <td>
+              <td data-label="Cliente">{c.prestamos.cliente?.nombre || '—'}</td>
+              <td data-label="DNI">{c.prestamos.cliente?.dni || '—'}</td>
+              <td data-label="Cuenta">{c.prestamos.cuenta?.nombre || '—'}</td>
+              <td data-label="Codigo">{c.prestamos.codigo}</td>
+              <td data-label="Fecha">
                 {formatFecha(c.fecha_vencimiento)}
                 {estaAtrasada(c) && <span className="badge atrasado" style={{ marginLeft: 6 }}>Atrasado</span>}
               </td>
-              <td>{money(montoConRecargo(c, c.prestamos.recargo_pct))}</td>
-              <td>
+              <td data-label="Monto">{money(montoConRecargo(c, c.prestamos.recargo_pct))}</td>
+              <td data-label="">
                 <button className="btn" style={{ padding: '6px 14px', fontSize: 13 }} onClick={() => marcarPagado(c)}>
                   Marcar Pagado
                 </button>
