@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
+import { formatFecha } from '../lib/prestamoUtils'
 
 const money = (n) => `S/. ${Number(n || 0).toLocaleString('es-PE', { minimumFractionDigits: 2 })}`
-const fechaCorta = (d) => new Date(d).toLocaleDateString('es-PE')
+const fechaCorta = formatFecha
 const estadoClass = (e) => e.toLowerCase().replace(' ', '-')
 
 export default function Clientes() {
@@ -12,19 +13,24 @@ export default function Clientes() {
   const [editForm, setEditForm] = useState({ dni: '', nombre: '' })
   const [guardando, setGuardando] = useState(false)
   const [historial, setHistorial] = useState(null)
-  const [fusionando, setFusionando] = useState(null) // cliente duplicado seleccionado
+  const [fusionando, setFusionando] = useState(null)
   const [fusionQuery, setFusionQuery] = useState('')
   const [fusionTarget, setFusionTarget] = useState(null)
   const [fusionando2, setFusionando2] = useState(false)
 
   async function cargar() {
-    const { data } = await supabase.from('clientes').select('id, dni, nombre').order('nombre')
-    setClientes(data || [])
+    const { data: cl } = await supabase.from('clientes').select('id, dni, nombre').order('nombre')
+    const { data: pr } = await supabase.from('prestamos').select('cliente_id, codigo')
+    const codigosPorCliente = {}
+    for (const p of pr || []) {
+      (codigosPorCliente[p.cliente_id] ||= []).push(p.codigo)
+    }
+    setClientes((cl || []).map((c) => ({ ...c, codigos: codigosPorCliente[c.id] || [] })))
   }
   useEffect(() => { cargar() }, [])
 
   const filtrados = clientes.filter((c) => {
-    const t = `${c.nombre} ${c.dni || ''}`.toLowerCase()
+    const t = `${c.nombre} ${c.dni || ''} ${(c.codigos || []).join(' ')}`.toLowerCase()
     return t.includes(busqueda.toLowerCase())
   })
 
@@ -87,7 +93,7 @@ export default function Clientes() {
       </p>
       <input
         className="input" style={{ maxWidth: 340, marginBottom: 16 }}
-        placeholder="Buscar por nombre o DNI..." value={busqueda}
+        placeholder="Buscar por nombre, DNI o codigo de prestamo..." value={busqueda}
         onChange={(e) => setBusqueda(e.target.value)}
       />
 
