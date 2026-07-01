@@ -262,7 +262,7 @@ export default function Prestamos() {
                         <td>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                             <select
-                              className="input" style={{ padding: '4px 8px', fontSize: 13, width: 'auto' }}
+                              className={`select-estado ${c.estado.toLowerCase()}`}
                               value={c.estado}
                               onChange={(e) => cambiarEstadoCuota(c, e.target.value, expanded)}
                             >
