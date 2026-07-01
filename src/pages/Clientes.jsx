@@ -92,7 +92,7 @@ export default function Clientes() {
         Base de datos de clientes: corrige nombres, agrega DNI, y revisa el historico de cada uno.
       </p>
       <input
-        className="input" style={{ maxWidth: 340, marginBottom: 16 }}
+        className="input search-box" style={{ marginBottom: 16 }}
         placeholder="Buscar por nombre, DNI o codigo de prestamo..." value={busqueda}
         onChange={(e) => setBusqueda(e.target.value)}
       />
