@@ -89,10 +89,20 @@ export async function syncCuota(cuota, prestamo) {
   }
 
   if (cuota.calendar_event_id) {
-    await gcal(`calendars/${calendarId}/events/${cuota.calendar_event_id}`, token, {
-      method: 'PATCH',
-      body: JSON.stringify(body),
-    })
+    try {
+      await gcal(`calendars/${calendarId}/events/${cuota.calendar_event_id}`, token, {
+        method: 'PATCH',
+        body: JSON.stringify(body),
+      })
+    } catch (err) {
+      // el evento guardado ya no existe (ej. se borro el calendario manualmente) -> crear uno nuevo
+      if (!String(err.message).includes('404')) throw err
+      const created = await gcal(`calendars/${calendarId}/events`, token, {
+        method: 'POST',
+        body: JSON.stringify(body),
+      })
+      await supabase.from('cuotas').update({ calendar_event_id: created.id }).eq('id', cuota.id)
+    }
   } else {
     const created = await gcal(`calendars/${calendarId}/events`, token, {
       method: 'POST',
