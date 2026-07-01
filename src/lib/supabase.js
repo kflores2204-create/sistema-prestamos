@@ -14,7 +14,7 @@ export async function signInWithGoogle() {
   const { error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
-      scopes: 'https://www.googleapis.com/auth/calendar.events',
+      scopes: 'https://www.googleapis.com/auth/calendar',
       redirectTo: window.location.origin,
       queryParams: { access_type: 'offline', prompt: 'consent' },
     },
