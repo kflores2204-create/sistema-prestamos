@@ -82,14 +82,14 @@ export default function FlujoCajaArequipa() {
       </form>
 
       <h3 style={{ color: 'var(--navy)' }}>Detalle de Gastos / Retiros</h3>
-      <table>
+      <table className="table-cards">
         <thead><tr><th>Fecha</th><th>Monto</th><th>Detalle</th></tr></thead>
         <tbody>
           {gastos.map((g) => (
             <tr key={g.id}>
-              <td>{formatFecha(g.fecha)}</td>
-              <td>{money(g.monto)}</td>
-              <td>{g.detalle}</td>
+              <td data-label="Fecha">{formatFecha(g.fecha)}</td>
+              <td data-label="Monto">{money(g.monto)}</td>
+              <td data-label="Detalle">{g.detalle}</td>
             </tr>
           ))}
         </tbody>
