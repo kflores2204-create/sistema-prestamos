@@ -165,7 +165,7 @@ export default function Prestamos() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, flexWrap: 'wrap', gap: 12 }}>
         <h2 style={{ color: 'var(--navy)', margin: 0 }}>Prestamos {cuenta}</h2>
         <input
-          className="input" style={{ maxWidth: 280 }}
+          className="input search-box"
           placeholder="Buscar por nombre, DNI o codigo..."
           value={busqueda} onChange={(e) => setBusqueda(e.target.value)}
         />
