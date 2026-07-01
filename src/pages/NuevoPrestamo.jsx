@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 
 const CUENTAS = ['BBVA', 'Caja Arequipa', 'Intereses']
@@ -10,6 +10,11 @@ export default function NuevoPrestamo() {
     capital: '', tasa: '0.2', cuotas: '4',
   })
   const [estado, setEstado] = useState({ cargando: false, mensaje: '', error: false })
+  const [clientes, setClientes] = useState([])
+
+  useEffect(() => {
+    supabase.from('clientes').select('nombre').order('nombre').then(({ data }) => setClientes(data || []))
+  }, [])
 
   function set(field, value) {
     setForm((f) => ({ ...f, [field]: value }))
@@ -86,8 +91,11 @@ export default function NuevoPrestamo() {
           </select>
         </label>
         <label>
-          Cliente
-          <input className="input" required value={form.cliente} onChange={(e) => set('cliente', e.target.value)} placeholder="Nombre del cliente" />
+          Cliente (elige uno existente o escribe uno nuevo)
+          <input className="input" list="lista-clientes" required value={form.cliente} onChange={(e) => set('cliente', e.target.value)} placeholder="Nombre del cliente" />
+          <datalist id="lista-clientes">
+            {clientes.map((c) => <option key={c.nombre} value={c.nombre} />)}
+          </datalist>
         </label>
         <label>
           Fecha de prestamo
