@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
+import { montoConRecargo, tieneRecargoAplicado } from '../lib/prestamoUtils'
 
 const money = (n) => `S/. ${Number(n || 0).toLocaleString('es-PE', { minimumFractionDigits: 2 })}`
 const fecha = (d) => new Date(d).toLocaleDateString('es-PE')
@@ -99,7 +100,14 @@ export default function Cronograma() {
                 <tr key={c.id}>
                   <td>{c.numero_cuota}</td>
                   <td>{fecha(c.fecha_vencimiento)}</td>
-                  <td>{money(c.monto)}</td>
+                  <td>
+                    {money(montoConRecargo(c, prestamo.recargo_pct))}
+                    {tieneRecargoAplicado(c, prestamo.recargo_pct) && (
+                      <span style={{ fontSize: 11, color: 'var(--red)', display: 'block' }}>
+                        incluye recargo por atraso
+                      </span>
+                    )}
+                  </td>
                   <td><span className={`badge ${c.estado.toLowerCase()}`}>{c.estado}</span></td>
                 </tr>
               ))}
