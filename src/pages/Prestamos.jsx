@@ -186,7 +186,7 @@ export default function Prestamos() {
         ))}
       </div>
 
-      <table>
+      <table className="table-cards">
         <thead>
           <tr>
             <th>Codigo</th><th>Cliente</th><th>DNI</th>
@@ -199,18 +199,18 @@ export default function Prestamos() {
         <tbody>
           {filtrados.map((p) => (
             <tr key={p.id} onClick={() => abrirDetalle(p.id)} style={{ cursor: 'pointer' }}>
-              <td>{p.codigo}</td>
-              <td>{p.cliente}</td>
-              <td>{p.cliente_dni || '—'}</td>
-              <td>{fechaCorta(p.fecha_prestamo)}</td>
-              <td>{money(p.capital)}</td>
-              <td>{money(p.total_a_pagar)}</td>
-              <td>{money(p.saldo_pendiente)}</td>
-              <td><span className={`badge ${estadoClass(p.estado)}`}>{p.estado}</span></td>
+              <td data-label="Codigo">{p.codigo}</td>
+              <td data-label="Cliente">{p.cliente}</td>
+              <td data-label="DNI">{p.cliente_dni || '—'}</td>
+              <td data-label="Fecha">{fechaCorta(p.fecha_prestamo)}</td>
+              <td data-label="Capital">{money(p.capital)}</td>
+              <td data-label="Total a Pagar">{money(p.total_a_pagar)}</td>
+              <td data-label="Saldo">{money(p.saldo_pendiente)}</td>
+              <td data-label="Estado"><span className={`badge ${estadoClass(p.estado)}`}>{p.estado}</span></td>
             </tr>
           ))}
           {filtrados.length === 0 && (
-            <tr><td colSpan={8} style={{ textAlign: 'center', color: 'var(--muted)' }}>No hay prestamos con estos filtros.</td></tr>
+            <tr><td data-label="" colSpan={8} style={{ textAlign: 'center', color: 'var(--muted)' }}>No hay prestamos con estos filtros.</td></tr>
           )}
         </tbody>
       </table>
