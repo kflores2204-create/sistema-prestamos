@@ -9,6 +9,7 @@ import NuevoPrestamo from './pages/NuevoPrestamo'
 import Cronograma from './pages/Cronograma'
 import FlujoCajaArequipa from './pages/FlujoCajaArequipa'
 import Clientes from './pages/Clientes'
+import Cobros from './pages/Cobros'
 import './styles.css'
 
 export default function App() {
@@ -42,6 +43,7 @@ export default function App() {
           <h1>Sistema de Prestamos</h1>
           <nav>
             <NavLink to="/" end>Dashboard</NavLink>
+            <NavLink to="/cobros">Cobros del Dia</NavLink>
             <NavLink to="/prestamos/BBVA">Prestamos BBVA</NavLink>
             <NavLink to="/prestamos/Caja Arequipa">Prestamos Caja Arequipa</NavLink>
             <NavLink to="/prestamos/Intereses">Prestamos Intereses</NavLink>
@@ -60,6 +62,7 @@ export default function App() {
         <main className="main">
           <Routes>
             <Route path="/" element={<Dashboard />} />
+            <Route path="/cobros" element={<Cobros />} />
             <Route path="/prestamos/:cuenta" element={<Prestamos />} />
             <Route path="/nuevo" element={<NuevoPrestamo />} />
             <Route path="/clientes" element={<Clientes />} />
