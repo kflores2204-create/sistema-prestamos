@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { syncCuota } from '../lib/calendarSync'
+import { FRECUENCIAS, fechaCuota, montoConRecargo, tieneRecargoAplicado } from '../lib/prestamoUtils'
 
 const money = (n) => `S/. ${Number(n || 0).toLocaleString('es-PE', { minimumFractionDigits: 2 })}`
 const fechaCorta = (d) => new Date(d).toLocaleDateString('es-PE')
@@ -53,6 +54,7 @@ export default function Prestamos() {
       await syncCuota(updated, {
         codigo: prestamo.codigo, num_cuotas: prestamo.num_cuotas,
         cliente_nombre: prestamo.cliente, cuenta_nombre: prestamo.cuenta,
+        recargo_pct: prestamo.recargo_pct,
       })
     } catch (err) {
       alert('El pago se guardo, pero no se pudo sincronizar con Calendar: ' + err.message)
@@ -76,6 +78,9 @@ export default function Prestamos() {
       capital: expanded.capital,
       tasa_interes: expanded.tasa_interes,
       num_cuotas: expanded.num_cuotas,
+      frecuencia: expanded.frecuencia || 'semanal',
+      tieneRecargo: !!expanded.recargo_pct,
+      recargoPct: expanded.recargo_pct ? String(Number(expanded.recargo_pct) * 100) : '5',
     })
     setEditando(true)
   }
@@ -93,6 +98,8 @@ export default function Prestamos() {
           capital: Number(formEdit.capital),
           tasa_interes: Number(formEdit.tasa_interes),
           num_cuotas: Number(formEdit.num_cuotas),
+          frecuencia: formEdit.frecuencia,
+          recargo_pct: formEdit.tieneRecargo ? Number(formEdit.recargoPct) / 100 : null,
         })
         .eq('id', expanded.id)
         .select()
@@ -103,8 +110,7 @@ export default function Prestamos() {
       const nuevasCuotas = []
       const fechaBase = new Date(formEdit.fecha_prestamo + 'T00:00:00')
       for (let n = 1; n <= Number(formEdit.num_cuotas); n++) {
-        const f = new Date(fechaBase)
-        f.setDate(f.getDate() + 7 * n)
+        const f = fechaCuota(fechaBase, n, formEdit.frecuencia)
         nuevasCuotas.push({
           prestamo_id: expanded.id, numero_cuota: n,
           fecha_vencimiento: f.toISOString().slice(0, 10),
@@ -215,6 +221,9 @@ export default function Prestamos() {
                   {expanded.aval_nombre && <p><b>Aval / Recomendado:</b> {expanded.aval_nombre}{expanded.aval_dni ? ` (${expanded.aval_dni})` : ''}</p>}
                   <p><b>Capital:</b> {money(expanded.capital)} &nbsp; <b>Total a pagar:</b> {money(expanded.total_a_pagar)}</p>
                   <p><b>Saldo pendiente:</b> {money(expanded.saldo_pendiente)} &nbsp; <span className={`badge ${estadoClass(expanded.estado)}`}>{expanded.estado}</span></p>
+                  <p><b>Frecuencia:</b> {(expanded.frecuencia || 'semanal').charAt(0).toUpperCase() + (expanded.frecuencia || 'semanal').slice(1)}
+                    {expanded.recargo_pct && <> &nbsp; <b>Recargo por atraso:</b> {(Number(expanded.recargo_pct) * 100).toFixed(0)}%</>}
+                  </p>
                 </div>
 
                 <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
@@ -229,7 +238,14 @@ export default function Prestamos() {
                       <tr key={c.id}>
                         <td>{c.numero_cuota}</td>
                         <td>{fechaCorta(c.fecha_vencimiento)}</td>
-                        <td>{money(c.monto)}</td>
+                        <td>
+                          {money(montoConRecargo(c, expanded.recargo_pct))}
+                          {tieneRecargoAplicado(c, expanded.recargo_pct) && (
+                            <div style={{ fontSize: 11, color: 'var(--red)' }}>
+                              incluye recargo {(Number(expanded.recargo_pct) * 100).toFixed(0)}%
+                            </div>
+                          )}
+                        </td>
                         <td>
                           <span className={`badge ${c.estado.toLowerCase()}`} onClick={() => toggleCuota(c, expanded)}>
                             {c.estado}
@@ -264,6 +280,20 @@ export default function Prestamos() {
                   <label>Numero de cuotas
                     <input className="input" type="number" min="1" max="6" required value={formEdit.num_cuotas} onChange={(e) => setFormEdit((f) => ({ ...f, num_cuotas: e.target.value }))} />
                   </label>
+                  <label>Frecuencia de pago
+                    <select className="input" value={formEdit.frecuencia} onChange={(e) => setFormEdit((f) => ({ ...f, frecuencia: e.target.value }))}>
+                      {FRECUENCIAS.map((fr) => <option key={fr.value} value={fr.value}>{fr.label}</option>)}
+                    </select>
+                  </label>
+                  <label style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <input type="checkbox" checked={formEdit.tieneRecargo} onChange={(e) => setFormEdit((f) => ({ ...f, tieneRecargo: e.target.checked }))} />
+                    Aplicar recargo por atraso
+                  </label>
+                  {formEdit.tieneRecargo && (
+                    <label>% de recargo sobre la cuota vencida
+                      <input className="input" type="number" min="0" step="0.1" value={formEdit.recargoPct} onChange={(e) => setFormEdit((f) => ({ ...f, recargoPct: e.target.value }))} />
+                    </label>
+                  )}
                   <div style={{ display: 'flex', gap: 8 }}>
                     <button className="btn" type="submit" disabled={guardando}>{guardando ? 'Guardando...' : 'Guardar cambios'}</button>
                     <button className="btn secondary" type="button" onClick={() => setEditando(false)}>Cancelar</button>
