@@ -51,18 +51,18 @@ export default function Dashboard() {
       </div>
 
       <h3 style={{ color: 'var(--navy)' }}>Resumen por cuenta</h3>
-      <table>
+      <table className="table-cards">
         <thead>
           <tr><th>Cuenta</th><th>Capital Prestado</th><th>Saldo Pendiente</th><th>Activos</th><th>Atrasados</th></tr>
         </thead>
         <tbody>
           {porCuenta.map((c) => (
             <tr key={c.cuenta}>
-              <td>{c.cuenta}</td>
-              <td>{money(c.capital)}</td>
-              <td>{money(c.saldo)}</td>
-              <td>{c.activos}</td>
-              <td>{c.atrasados}</td>
+              <td data-label="Cuenta">{c.cuenta}</td>
+              <td data-label="Capital Prestado">{money(c.capital)}</td>
+              <td data-label="Saldo Pendiente">{money(c.saldo)}</td>
+              <td data-label="Activos">{c.activos}</td>
+              <td data-label="Atrasados">{c.atrasados}</td>
             </tr>
           ))}
         </tbody>
