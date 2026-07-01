@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
-import { FRECUENCIAS, fechaCuota } from '../lib/prestamoUtils'
+import { FRECUENCIAS, fechaCuota, hoyISO } from '../lib/prestamoUtils'
 
 const CUENTAS = ['BBVA', 'Caja Arequipa', 'Intereses']
 const PREFIX = { BBVA: 'BBVA', 'Caja Arequipa': 'CAJA', Intereses: 'INT' }
@@ -56,7 +56,7 @@ function BuscadorPersona({ label, dni, nombre, onChangeDni, onChangeNombre, pers
 
 export default function NuevoPrestamo() {
   const [cuenta, setCuenta] = useState('BBVA')
-  const [fecha, setFecha] = useState(new Date().toISOString().slice(0, 10))
+  const [fecha, setFecha] = useState(hoyISO())
   const [capital, setCapital] = useState('')
   const [tasa, setTasa] = useState('0.2')
   const [cuotas, setCuotas] = useState('4')
@@ -127,12 +127,10 @@ export default function NuevoPrestamo() {
       if (errPrestamo) throw errPrestamo
 
       const nuevasCuotas = []
-      const fechaBase = new Date(fecha + 'T00:00:00')
       for (let n = 1; n <= Number(cuotas); n++) {
-        const f = fechaCuota(fechaBase, n, frecuencia)
         nuevasCuotas.push({
           prestamo_id: prestamo.id, numero_cuota: n,
-          fecha_vencimiento: f.toISOString().slice(0, 10),
+          fecha_vencimiento: fechaCuota(fecha, n, frecuencia),
           monto: prestamo.monto_cuota, estado: 'Pendiente',
         })
       }
@@ -142,7 +140,7 @@ export default function NuevoPrestamo() {
       setEstado({ cargando: false, mensaje: `Prestamo ${codigo} creado correctamente.`, error: false })
       setClienteDni(''); setClienteNombre(''); setCapital('')
       setTieneAval(false); setAvalDni(''); setAvalNombre('')
-      setFrecuencia('semanal'); setTieneRecargo(false); setRecargoPct('5')
+      setFecha(hoyISO()); setFrecuencia('semanal'); setTieneRecargo(false); setRecargoPct('5')
     } catch (err) {
       setEstado({ cargando: false, mensaje: err.message, error: true })
     }
