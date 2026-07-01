@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
+import { hoyISO, formatFecha } from '../lib/prestamoUtils'
 
 const money = (n) => `S/. ${Number(n || 0).toLocaleString('es-PE', { minimumFractionDigits: 2 })}`
 
 export default function FlujoCajaArequipa() {
   const [movimientos, setMovimientos] = useState([])
   const [capitalPendiente, setCapitalPendiente] = useState(0)
-  const [nuevo, setNuevo] = useState({ fecha: new Date().toISOString().slice(0, 10), monto: '', detalle: '' })
+  const [nuevo, setNuevo] = useState({ fecha: hoyISO(), monto: '', detalle: '' })
   const [guardando, setGuardando] = useState(false)
 
   async function cargar() {
@@ -37,7 +38,7 @@ export default function FlujoCajaArequipa() {
     await supabase.from('flujo_caja_arequipa').insert({
       fecha: nuevo.fecha, monto: -Math.abs(Number(nuevo.monto)), detalle: nuevo.detalle,
     })
-    setNuevo({ fecha: new Date().toISOString().slice(0, 10), monto: '', detalle: '' })
+    setNuevo({ fecha: hoyISO(), monto: '', detalle: '' })
     setGuardando(false)
     cargar()
   }
@@ -86,7 +87,7 @@ export default function FlujoCajaArequipa() {
         <tbody>
           {gastos.map((g) => (
             <tr key={g.id}>
-              <td>{new Date(g.fecha).toLocaleDateString('es-PE')}</td>
+              <td>{formatFecha(g.fecha)}</td>
               <td>{money(g.monto)}</td>
               <td>{g.detalle}</td>
             </tr>
