@@ -14,7 +14,10 @@ const COLOR = { ATRASADO: '11', PRONTO: '5', FUTURO: '9' } // ids de color de Go
 async function getAccessToken() {
   const { data: { session } } = await supabase.auth.getSession()
   if (!session?.provider_token) {
-    throw new Error('No hay token de Google. Vuelve a iniciar sesion.')
+    throw new Error(
+      'No hay una sesion activa de Google Calendar. Cierra sesion y vuelve a entrar con ' +
+      'el boton "Entrar con Google" para reactivar la sincronizacion.'
+    )
   }
   return session.provider_token
 }
@@ -24,6 +27,18 @@ async function gcal(path, token, opts = {}) {
     ...opts,
     headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', ...opts.headers },
   })
+  if (res.status === 401) {
+    throw new Error(
+      'Tu sesion de Google Calendar expiro (esto pasa despues de 1 hora). ' +
+      'Cierra sesion y vuelve a entrar con Google para reactivar la sincronizacion.'
+    )
+  }
+  if (res.status === 403) {
+    throw new Error(
+      'Google Calendar rechazo el permiso (403). Revisa que hayas aceptado el acceso a ' +
+      'Calendar al iniciar sesion, y que la Google Calendar API este habilitada en tu proyecto de Google Cloud.'
+    )
+  }
   if (!res.ok) throw new Error(`Google Calendar error ${res.status}: ${await res.text()}`)
   return res.status === 204 ? null : res.json()
 }
@@ -36,6 +51,12 @@ async function getOrCreateCalendarId(token) {
     method: 'POST',
     body: JSON.stringify({ summary: CALENDAR_SUMMARY }),
   })
+  // el calendario nuevo no aparece solo en la lista de calendarios visibles del usuario;
+  // hay que insertarlo explicitamente en la calendarList para que se vea en Google Calendar
+  await gcal('users/me/calendarList', token, {
+    method: 'POST',
+    body: JSON.stringify({ id: created.id }),
+  }).catch(() => {}) // si ya esta suscrito, esto puede fallar con 409, lo ignoramos
   return created.id
 }
 
@@ -81,20 +102,24 @@ export async function syncCuota(cuota, prestamo) {
   }
 }
 
-/** Sincroniza TODAS las cuotas pendientes/atrasadas de una vez. */
+/** Sincroniza TODAS las cuotas pendientes/atrasadas de una vez. Devuelve cuantas proceso. */
 export async function syncTodo() {
   const { data: cuotas, error } = await supabase
     .from('cuotas')
-    .select('*, prestamos(codigo, num_cuotas, cliente:clientes(nombre), cuenta:cuentas(nombre))')
+    .select('*, prestamos(codigo, num_cuotas, cliente:clientes!prestamos_cliente_id_fkey(nombre), cuenta:cuentas(nombre))')
   if (error) throw error
 
+  let procesadas = 0
   for (const c of cuotas) {
+    if (!c.prestamos) continue
     const prestamo = {
       codigo: c.prestamos.codigo,
       num_cuotas: c.prestamos.num_cuotas,
-      cliente_nombre: c.prestamos.cliente.nombre,
-      cuenta_nombre: c.prestamos.cuenta.nombre,
+      cliente_nombre: c.prestamos.cliente?.nombre || 'Cliente',
+      cuenta_nombre: c.prestamos.cuenta?.nombre || '',
     }
     await syncCuota(c, prestamo)
+    procesadas++
   }
+  return procesadas
 }
