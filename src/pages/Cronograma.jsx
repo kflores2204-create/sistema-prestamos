@@ -6,54 +6,68 @@ const fecha = (d) => new Date(d).toLocaleDateString('es-PE')
 
 export default function Cronograma() {
   const [opciones, setOpciones] = useState([])
-  const [busqueda, setBusqueda] = useState('')
-  const [seleccion, setSeleccion] = useState('')
+  const [query, setQuery] = useState('')
+  const [abierto, setAbierto] = useState(false)
   const [prestamo, setPrestamo] = useState(null)
   const [cuotas, setCuotas] = useState([])
 
   useEffect(() => {
     supabase
       .from('v_prestamo_resumen')
-      .select('id, codigo, cliente, cuenta')
-      .order('cuenta', { ascending: true })
-      .order('codigo', { ascending: true })
+      .select('id, codigo, cliente, cliente_dni, cuenta, fecha_prestamo')
+      .order('fecha_prestamo', { ascending: false })
       .then(({ data }) => setOpciones(data || []))
   }, [])
 
   useEffect(() => {
-    if (!seleccion) { setPrestamo(null); setCuotas([]); return }
-    supabase.from('v_prestamo_resumen').select('*').eq('id', seleccion).single()
-      .then(({ data }) => setPrestamo(data))
-    supabase.from('cuotas').select('*').eq('prestamo_id', seleccion).order('numero_cuota')
+    if (!prestamo) { setCuotas([]); return }
+    supabase.from('cuotas').select('*').eq('prestamo_id', prestamo.id).order('numero_cuota')
       .then(({ data }) => setCuotas(data || []))
-  }, [seleccion])
+  }, [prestamo])
 
-  const filtradas = opciones.filter((o) => {
-    const texto = `${o.cliente} ${o.codigo} ${o.cuenta}`.toLowerCase()
-    return texto.includes(busqueda.toLowerCase())
-  })
+  const sugerencias = query.length >= 1
+    ? opciones.filter((o) => {
+        const texto = `${o.cliente} ${o.codigo} ${o.cliente_dni || ''}`.toLowerCase()
+        return texto.includes(query.toLowerCase())
+      }).slice(0, 8)
+    : []
+
+  async function elegir(o) {
+    setQuery(o.cliente)
+    setAbierto(false)
+    const { data } = await supabase.from('v_prestamo_resumen').select('*').eq('id', o.id).single()
+    setPrestamo(data)
+  }
 
   return (
     <div>
       <div className="no-print">
         <h2 style={{ color: 'var(--navy)' }}>Cronograma de Pagos</h2>
-        <label>
-          Buscar cliente o codigo:
-          <input
-            className="input" placeholder="Ej: Juan Perez o PR-CAJA-0012"
-            value={busqueda} onChange={(e) => setBusqueda(e.target.value)}
-          />
-        </label>
-        <label style={{ marginTop: 10 }}>
-          Selecciona Cliente: ({filtradas.length} resultado{filtradas.length === 1 ? '' : 's'})
-          <select className="input" size={Math.min(8, Math.max(4, filtradas.length))} value={seleccion} onChange={(e) => setSeleccion(e.target.value)}>
-            {filtradas.map((o) => (
-              <option key={o.id} value={o.id}>{o.cuenta} | {o.cliente} | {o.codigo}</option>
-            ))}
-          </select>
-        </label>
+        <div className="buscador-persona" style={{ maxWidth: 420 }}>
+          <label>Buscar cliente
+            <input
+              className="input" placeholder="Nombre, DNI o codigo del prestamo..."
+              value={query}
+              onChange={(e) => { setQuery(e.target.value); setAbierto(true); if (!e.target.value) setPrestamo(null) }}
+              onFocus={() => setAbierto(true)}
+              onBlur={() => setTimeout(() => setAbierto(false), 150)}
+            />
+          </label>
+          {abierto && sugerencias.length > 0 && (
+            <div className="autocomplete-dropdown">
+              {sugerencias.map((o) => (
+                <div key={o.id} className="autocomplete-item" onMouseDown={() => elegir(o)}>
+                  <span style={{ fontWeight: 600 }}>{o.cliente}</span>
+                  <span style={{ color: 'var(--muted)', fontSize: 12 }}>
+                    Inicio: {fecha(o.fecha_prestamo)} · {o.cuenta} · {o.codigo}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
         {prestamo && (
-          <button className="btn" style={{ marginTop: 12 }} onClick={() => window.print()}>
+          <button className="btn" style={{ marginTop: 16 }} onClick={() => window.print()}>
             Descargar / Imprimir PDF
           </button>
         )}
@@ -65,6 +79,8 @@ export default function Cronograma() {
           <table>
             <tbody>
               <tr><td><b>Cliente</b></td><td>{prestamo.cliente}</td></tr>
+              {prestamo.cliente_dni && <tr><td><b>DNI</b></td><td>{prestamo.cliente_dni}</td></tr>}
+              {prestamo.aval_nombre && <tr><td><b>Aval / Recomendado</b></td><td>{prestamo.aval_nombre}</td></tr>}
               <tr><td><b>Cuenta</b></td><td>{prestamo.cuenta}</td></tr>
               <tr><td><b>Fecha de Prestamo</b></td><td>{fecha(prestamo.fecha_prestamo)}</td></tr>
               <tr><td><b>Capital Prestado</b></td><td>{money(prestamo.capital)}</td></tr>
