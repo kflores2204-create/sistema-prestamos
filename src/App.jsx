@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { BrowserRouter, Routes, Route, NavLink, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, NavLink, Navigate, useLocation } from 'react-router-dom'
 import { supabase, signOut } from './lib/supabase'
 import { syncTodo } from './lib/calendarSync'
 import Login from './pages/Login'
@@ -12,9 +12,43 @@ import Clientes from './pages/Clientes'
 import Cobros from './pages/Cobros'
 import './styles.css'
 
+function Sidebar({ sincronizando, handleSync, sidebarOpen, setSidebarOpen }) {
+  const location = useLocation()
+
+  // cierra el menu automaticamente al navegar (comportamiento esperado en celular)
+  useEffect(() => { setSidebarOpen(false) }, [location.pathname])
+
+  return (
+    <>
+      {sidebarOpen && <div className="sidebar-backdrop" onClick={() => setSidebarOpen(false)} />}
+      <aside className={`sidebar no-print ${sidebarOpen ? 'sidebar-open' : ''}`}>
+        <h1>Sistema de Prestamos</h1>
+        <nav>
+          <NavLink to="/" end>Dashboard</NavLink>
+          <NavLink to="/cobros">Cobros del Dia</NavLink>
+          <NavLink to="/prestamos/BBVA">Prestamos BBVA</NavLink>
+          <NavLink to="/prestamos/Caja Arequipa">Prestamos Caja Arequipa</NavLink>
+          <NavLink to="/prestamos/Intereses">Prestamos Intereses</NavLink>
+          <NavLink to="/nuevo">Nuevo Prestamo</NavLink>
+          <NavLink to="/clientes">Clientes</NavLink>
+          <NavLink to="/cronograma">Cronograma Cliente</NavLink>
+          <NavLink to="/flujo-caja-arequipa">Flujo Caja Arequipa</NavLink>
+        </nav>
+        <div style={{ marginTop: 32, display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <button className="btn" onClick={handleSync} disabled={sincronizando}>
+            {sincronizando ? 'Sincronizando...' : 'Sincronizar Calendar'}
+          </button>
+          <button className="btn secondary" onClick={signOut}>Cerrar sesion</button>
+        </div>
+      </aside>
+    </>
+  )
+}
+
 export default function App() {
   const [session, setSession] = useState(undefined) // undefined = cargando
   const [sincronizando, setSincronizando] = useState(false)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setSession(data.session))
@@ -39,26 +73,13 @@ export default function App() {
   return (
     <BrowserRouter>
       <div className="app-shell">
-        <aside className="sidebar no-print">
-          <h1>Sistema de Prestamos</h1>
-          <nav>
-            <NavLink to="/" end>Dashboard</NavLink>
-            <NavLink to="/cobros">Cobros del Dia</NavLink>
-            <NavLink to="/prestamos/BBVA">Prestamos BBVA</NavLink>
-            <NavLink to="/prestamos/Caja Arequipa">Prestamos Caja Arequipa</NavLink>
-            <NavLink to="/prestamos/Intereses">Prestamos Intereses</NavLink>
-            <NavLink to="/nuevo">Nuevo Prestamo</NavLink>
-            <NavLink to="/clientes">Clientes</NavLink>
-            <NavLink to="/cronograma">Cronograma Cliente</NavLink>
-            <NavLink to="/flujo-caja-arequipa">Flujo Caja Arequipa</NavLink>
-          </nav>
-          <div style={{ marginTop: 32, display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <button className="btn" onClick={handleSync} disabled={sincronizando}>
-              {sincronizando ? 'Sincronizando...' : 'Sincronizar Calendar'}
-            </button>
-            <button className="btn secondary" onClick={signOut}>Cerrar sesion</button>
-          </div>
-        </aside>
+        <button className="hamburger-btn no-print" onClick={() => setSidebarOpen((o) => !o)} aria-label="Abrir menu">
+          ☰
+        </button>
+        <Sidebar
+          sincronizando={sincronizando} handleSync={handleSync}
+          sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen}
+        />
         <main className="main">
           <Routes>
             <Route path="/" element={<Dashboard />} />
