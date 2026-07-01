@@ -1,0 +1,145 @@
+import { useEffect, useState } from 'react'
+import { supabase } from '../lib/supabase'
+
+const money = (n) => `S/. ${Number(n || 0).toLocaleString('es-PE', { minimumFractionDigits: 2 })}`
+const fechaCorta = (d) => new Date(d).toLocaleDateString('es-PE')
+const estadoClass = (e) => e.toLowerCase().replace(' ', '-')
+
+export default function Clientes() {
+  const [clientes, setClientes] = useState([])
+  const [busqueda, setBusqueda] = useState('')
+  const [editId, setEditId] = useState(null)
+  const [editForm, setEditForm] = useState({ dni: '', nombre: '' })
+  const [guardando, setGuardando] = useState(false)
+  const [historial, setHistorial] = useState(null)
+
+  async function cargar() {
+    const { data } = await supabase.from('clientes').select('id, dni, nombre').order('nombre')
+    setClientes(data || [])
+  }
+  useEffect(() => { cargar() }, [])
+
+  const filtrados = clientes.filter((c) => {
+    const t = `${c.nombre} ${c.dni || ''}`.toLowerCase()
+    return t.includes(busqueda.toLowerCase())
+  })
+
+  function empezarEdicion(c) {
+    setEditId(c.id)
+    setEditForm({ dni: c.dni || '', nombre: c.nombre })
+  }
+
+  async function guardarEdicion(id) {
+    setGuardando(true)
+    const { error } = await supabase.from('clientes').update({ dni: editForm.dni || null, nombre: editForm.nombre }).eq('id', id)
+    setGuardando(false)
+    if (error) { alert('Error al guardar: ' + error.message); return }
+    setEditId(null)
+    cargar()
+    if (historial?.cliente.id === id) verHistorial({ id, dni: editForm.dni, nombre: editForm.nombre })
+  }
+
+  async function verHistorial(c) {
+    const { data } = await supabase
+      .from('v_prestamo_resumen')
+      .select('*')
+      .eq('cliente_id', c.id)
+      .order('fecha_prestamo', { ascending: false })
+    setHistorial({ cliente: c, prestamos: data || [] })
+  }
+
+  const totales = historial && {
+    capital: historial.prestamos.reduce((a, p) => a + Number(p.capital), 0),
+    pagado: historial.prestamos.reduce((a, p) => a + Number(p.pagado_hasta_hoy), 0),
+    pendiente: historial.prestamos.reduce((a, p) => a + Number(p.saldo_pendiente), 0),
+    activos: historial.prestamos.filter((p) => p.estado !== 'FINALIZADO').length,
+    finalizados: historial.prestamos.filter((p) => p.estado === 'FINALIZADO').length,
+  }
+
+  return (
+    <div>
+      <h2 style={{ color: 'var(--navy)' }}>Clientes</h2>
+      <p style={{ color: 'var(--muted)', marginTop: -8 }}>
+        Base de datos de clientes: corrige nombres, agrega DNI, y revisa el historico de cada uno.
+      </p>
+      <input
+        className="input" style={{ maxWidth: 340, marginBottom: 16 }}
+        placeholder="Buscar por nombre o DNI..." value={busqueda}
+        onChange={(e) => setBusqueda(e.target.value)}
+      />
+
+      <table>
+        <thead><tr><th style={{ width: 120 }}>DNI</th><th>Nombre</th><th style={{ width: 200 }}></th></tr></thead>
+        <tbody>
+          {filtrados.map((c) => (
+            <tr key={c.id}>
+              {editId === c.id ? (
+                <>
+                  <td><input className="input" value={editForm.dni} onChange={(e) => setEditForm((f) => ({ ...f, dni: e.target.value }))} maxLength={8} /></td>
+                  <td><input className="input" value={editForm.nombre} onChange={(e) => setEditForm((f) => ({ ...f, nombre: e.target.value }))} /></td>
+                  <td style={{ display: 'flex', gap: 6 }}>
+                    <button className="btn" style={{ padding: '6px 12px', fontSize: 12 }} onClick={() => guardarEdicion(c.id)} disabled={guardando}>Guardar</button>
+                    <button className="btn secondary" style={{ padding: '6px 12px', fontSize: 12 }} onClick={() => setEditId(null)}>Cancelar</button>
+                  </td>
+                </>
+              ) : (
+                <>
+                  <td>{c.dni || <span style={{ color: 'var(--muted)' }}>Sin DNI</span>}</td>
+                  <td>{c.nombre}</td>
+                  <td style={{ display: 'flex', gap: 6 }}>
+                    <button className="chip" onClick={() => verHistorial(c)}>Ver historial</button>
+                    <button className="chip" onClick={() => empezarEdicion(c)}>Editar</button>
+                  </td>
+                </>
+              )}
+            </tr>
+          ))}
+          {filtrados.length === 0 && (
+            <tr><td colSpan={3} style={{ textAlign: 'center', color: 'var(--muted)' }}>Sin resultados.</td></tr>
+          )}
+        </tbody>
+      </table>
+
+      {historial && (
+        <>
+          <div className="drawer-backdrop" onClick={() => setHistorial(null)} />
+          <div className="drawer">
+            <div className="drawer-header">
+              <div>
+                <h3 style={{ margin: 0, color: 'var(--navy)' }}>{historial.cliente.nombre}</h3>
+                <p style={{ margin: '2px 0 0', color: 'var(--muted)', fontSize: 13 }}>{historial.cliente.dni || 'Sin DNI'}</p>
+              </div>
+              <button className="drawer-close" onClick={() => setHistorial(null)}>✕</button>
+            </div>
+
+            <div className="kpi-grid" style={{ gridTemplateColumns: '1fr 1fr', marginBottom: 20 }}>
+              <div className="kpi-card"><div className="label">Capital Historico</div><div className="value" style={{ fontSize: 18 }}>{money(totales.capital)}</div></div>
+              <div className="kpi-card"><div className="label">Total Pagado</div><div className="value" style={{ fontSize: 18 }}>{money(totales.pagado)}</div></div>
+              <div className="kpi-card"><div className="label">Saldo Pendiente</div><div className="value" style={{ fontSize: 18 }}>{money(totales.pendiente)}</div></div>
+              <div className="kpi-card"><div className="label">Activos / Finalizados</div><div className="value" style={{ fontSize: 18 }}>{totales.activos} / {totales.finalizados}</div></div>
+            </div>
+
+            <h4 style={{ color: 'var(--navy)' }}>Historial de prestamos</h4>
+            <table>
+              <thead><tr><th>Codigo</th><th>Cuenta</th><th>Fecha</th><th>Capital</th><th>Estado</th></tr></thead>
+              <tbody>
+                {historial.prestamos.map((p) => (
+                  <tr key={p.id}>
+                    <td>{p.codigo}</td>
+                    <td>{p.cuenta}</td>
+                    <td>{fechaCorta(p.fecha_prestamo)}</td>
+                    <td>{money(p.capital)}</td>
+                    <td><span className={`badge ${estadoClass(p.estado)}`}>{p.estado}</span></td>
+                  </tr>
+                ))}
+                {historial.prestamos.length === 0 && (
+                  <tr><td colSpan={5} style={{ textAlign: 'center', color: 'var(--muted)' }}>Sin prestamos registrados.</td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
