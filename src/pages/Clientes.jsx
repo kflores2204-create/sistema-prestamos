@@ -12,6 +12,10 @@ export default function Clientes() {
   const [editForm, setEditForm] = useState({ dni: '', nombre: '' })
   const [guardando, setGuardando] = useState(false)
   const [historial, setHistorial] = useState(null)
+  const [fusionando, setFusionando] = useState(null) // cliente duplicado seleccionado
+  const [fusionQuery, setFusionQuery] = useState('')
+  const [fusionTarget, setFusionTarget] = useState(null)
+  const [fusionando2, setFusionando2] = useState(false)
 
   async function cargar() {
     const { data } = await supabase.from('clientes').select('id, dni, nombre').order('nombre')
@@ -37,6 +41,25 @@ export default function Clientes() {
     setEditId(null)
     cargar()
     if (historial?.cliente.id === id) verHistorial({ id, dni: editForm.dni, nombre: editForm.nombre })
+  }
+
+  function empezarFusion(c) {
+    setFusionando(c)
+    setFusionQuery('')
+    setFusionTarget(null)
+  }
+
+  async function confirmarFusion() {
+    if (!fusionTarget) return
+    if (!confirm(`Todos los prestamos de "${fusionando.nombre}" pasaran a ser de "${fusionTarget.nombre}", y "${fusionando.nombre}" se eliminara. Continuar?`)) return
+    setFusionando2(true)
+    const { error } = await supabase.rpc('fusionar_clientes', {
+      duplicado_id: fusionando.id, principal_id: fusionTarget.id,
+    })
+    setFusionando2(false)
+    if (error) { alert('Error al fusionar: ' + error.message); return }
+    setFusionando(null)
+    cargar()
   }
 
   async function verHistorial(c) {
@@ -89,6 +112,7 @@ export default function Clientes() {
                   <td style={{ display: 'flex', gap: 6 }}>
                     <button className="chip" onClick={() => verHistorial(c)}>Ver historial</button>
                     <button className="chip" onClick={() => empezarEdicion(c)}>Editar</button>
+                    <button className="chip" onClick={() => empezarFusion(c)}>Fusionar</button>
                   </td>
                 </>
               )}
@@ -99,6 +123,56 @@ export default function Clientes() {
           )}
         </tbody>
       </table>
+
+      {fusionando && (
+        <>
+          <div className="drawer-backdrop" onClick={() => setFusionando(null)} />
+          <div className="drawer">
+            <div className="drawer-header">
+              <div>
+                <h3 style={{ margin: 0, color: 'var(--navy)' }}>Fusionar cliente</h3>
+                <p style={{ margin: '2px 0 0', color: 'var(--muted)', fontSize: 13 }}>{fusionando.nombre}</p>
+              </div>
+              <button className="drawer-close" onClick={() => setFusionando(null)}>✕</button>
+            </div>
+
+            <p style={{ color: 'var(--muted)', fontSize: 13, marginBottom: 12 }}>
+              Busca el cliente correcto con el que se debe unir. Todos los prestamos de
+              <b> {fusionando.nombre} </b> pasaran a ese cliente, y este registro duplicado se eliminara.
+            </p>
+
+            <div className="buscador-persona">
+              <input
+                className="input" placeholder="Buscar cliente correcto por nombre o DNI..."
+                value={fusionQuery} onChange={(e) => { setFusionQuery(e.target.value); setFusionTarget(null) }}
+              />
+              {fusionQuery.length >= 2 && !fusionTarget && (
+                <div className="autocomplete-dropdown">
+                  {clientes
+                    .filter((c) => c.id !== fusionando.id)
+                    .filter((c) => `${c.nombre} ${c.dni || ''}`.toLowerCase().includes(fusionQuery.toLowerCase()))
+                    .slice(0, 6)
+                    .map((c) => (
+                      <div key={c.id} className="autocomplete-item" onMouseDown={() => { setFusionTarget(c); setFusionQuery(c.nombre) }}>
+                        <span className="autocomplete-dni">{c.dni || 'S/N'}</span>
+                        <span>{c.nombre}</span>
+                      </div>
+                    ))}
+                </div>
+              )}
+            </div>
+
+            {fusionTarget && (
+              <div style={{ marginTop: 16 }}>
+                <p>Se va a fusionar <b>{fusionando.nombre}</b> dentro de <b>{fusionTarget.nombre}</b>.</p>
+                <button className="btn" onClick={confirmarFusion} disabled={fusionando2}>
+                  {fusionando2 ? 'Fusionando...' : 'Confirmar fusion'}
+                </button>
+              </div>
+            )}
+          </div>
+        </>
+      )}
 
       {historial && (
         <>
