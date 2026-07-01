@@ -2,12 +2,12 @@ import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { syncCuota } from '../lib/calendarSync'
-import { FRECUENCIAS, fechaCuota, montoConRecargo, tieneRecargoAplicado } from '../lib/prestamoUtils'
+import { FRECUENCIAS, fechaCuota, montoConRecargo, tieneRecargoAplicado, estaAtrasada, formatFecha } from '../lib/prestamoUtils'
 
 const money = (n) => `S/. ${Number(n || 0).toLocaleString('es-PE', { minimumFractionDigits: 2 })}`
-const fechaCorta = (d) => new Date(d).toLocaleDateString('es-PE')
+const fechaCorta = formatFecha
 const estadoClass = (e) => e.toLowerCase().replace(' ', '-')
-const toDateInput = (d) => new Date(d).toISOString().slice(0, 10)
+const toDateInput = (d) => String(d).slice(0, 10)
 const ESTADOS = ['ACTIVO', 'EN PROCESO', 'ATRASADO', 'FINALIZADO']
 
 export default function Prestamos() {
@@ -46,8 +46,7 @@ export default function Prestamos() {
     setFiltroEstados((prev) => (prev.size === ESTADOS.length ? new Set() : new Set(ESTADOS)))
   }
 
-  async function toggleCuota(cuota, prestamo) {
-    const nuevoEstado = cuota.estado === 'Pagado' ? 'Pendiente' : 'Pagado'
+  async function cambiarEstadoCuota(cuota, nuevoEstado, prestamo) {
     const { data: updated } = await supabase
       .from('cuotas').update({ estado: nuevoEstado }).eq('id', cuota.id).select().single()
     try {
@@ -106,17 +105,31 @@ export default function Prestamos() {
         .single()
       if (errP) throw errP
 
-      await supabase.from('cuotas').delete().eq('prestamo_id', expanded.id)
+      // conserva cuales cuotas ya estaban Pagado, por numero de cuota, antes de recalcular fechas/montos
+      const { data: cuotasActuales } = await supabase
+        .from('cuotas').select('numero_cuota, estado').eq('prestamo_id', expanded.id)
+      const pagadasPorNumero = new Set((cuotasActuales || []).filter((c) => c.estado === 'Pagado').map((c) => c.numero_cuota))
+
+      const numCuotasNuevo = Number(formEdit.num_cuotas)
+      const sePerderian = [...pagadasPorNumero].filter((n) => n > numCuotasNuevo)
+      if (sePerderian.length > 0) {
+        const ok = confirm(
+          `Advertencia: reducir a ${numCuotasNuevo} cuotas va a eliminar el pago ya registrado en la(s) cuota(s) ${sePerderian.join(', ')}. Continuar de todas formas?`
+        )
+        if (!ok) { setGuardando(false); return }
+      }
+
       const nuevasCuotas = []
-      const fechaBase = new Date(formEdit.fecha_prestamo + 'T00:00:00')
-      for (let n = 1; n <= Number(formEdit.num_cuotas); n++) {
-        const f = fechaCuota(fechaBase, n, formEdit.frecuencia)
+      for (let n = 1; n <= numCuotasNuevo; n++) {
         nuevasCuotas.push({
           prestamo_id: expanded.id, numero_cuota: n,
-          fecha_vencimiento: f.toISOString().slice(0, 10),
-          monto: prestamoActualizado.monto_cuota, estado: 'Pendiente',
+          fecha_vencimiento: fechaCuota(formEdit.fecha_prestamo, n, formEdit.frecuencia),
+          monto: prestamoActualizado.monto_cuota,
+          estado: pagadasPorNumero.has(n) ? 'Pagado' : 'Pendiente',
         })
       }
+
+      await supabase.from('cuotas').delete().eq('prestamo_id', expanded.id)
       await supabase.from('cuotas').insert(nuevasCuotas)
 
       await cargar()
@@ -247,9 +260,19 @@ export default function Prestamos() {
                           )}
                         </td>
                         <td>
-                          <span className={`badge ${c.estado.toLowerCase()}`} onClick={() => toggleCuota(c, expanded)}>
-                            {c.estado}
-                          </span>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <select
+                              className="input" style={{ padding: '4px 8px', fontSize: 13, width: 'auto' }}
+                              value={c.estado}
+                              onChange={(e) => cambiarEstadoCuota(c, e.target.value, expanded)}
+                            >
+                              <option value="Pendiente">Pendiente</option>
+                              <option value="Pagado">Pagado</option>
+                            </select>
+                            {estaAtrasada(c) && (
+                              <span className="badge atrasado">Atrasado</span>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -261,8 +284,8 @@ export default function Prestamos() {
             {editando && (
               <div>
                 <p style={{ color: 'var(--muted)', fontSize: 13 }}>
-                  Nota: si cambias capital, fecha o numero de cuotas, el cronograma se
-                  recalcula desde cero (todas quedan como Pendiente).
+                  Nota: las fechas y montos se recalculan segun lo que cambies, pero las
+                  cuotas que ya estaban marcadas como Pagado se mantienen asi.
                 </p>
                 <form onSubmit={guardarEdicion} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                   <label>Cliente
