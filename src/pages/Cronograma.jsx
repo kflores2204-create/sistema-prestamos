@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
-import { montoConRecargo, tieneRecargoAplicado } from '../lib/prestamoUtils'
+import { montoConRecargo, tieneRecargoAplicado, formatFecha } from '../lib/prestamoUtils'
 
 const money = (n) => `S/. ${Number(n || 0).toLocaleString('es-PE', { minimumFractionDigits: 2 })}`
-const fecha = (d) => new Date(d).toLocaleDateString('es-PE')
+const fecha = formatFecha
 
 export default function Cronograma() {
   const [opciones, setOpciones] = useState([])
