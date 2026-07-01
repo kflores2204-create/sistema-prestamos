@@ -12,12 +12,24 @@ import './styles.css'
 
 export default function App() {
   const [session, setSession] = useState(undefined) // undefined = cargando
+  const [sincronizando, setSincronizando] = useState(false)
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setSession(data.session))
     const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => setSession(s))
     return () => sub.subscription.unsubscribe()
   }, [])
+
+  async function handleSync() {
+    setSincronizando(true)
+    try {
+      const n = await syncTodo()
+      alert(`Listo. Se sincronizaron ${n} cuotas con Google Calendar. Busca el calendario "Cobros - Prestamos" en tu lista de calendarios (si es nuevo, puede que tengas que activarlo con el check en el panel izquierdo de Google Calendar).`)
+    } catch (err) {
+      alert('No se pudo sincronizar con Calendar:\n\n' + err.message)
+    }
+    setSincronizando(false)
+  }
 
   if (session === undefined) return null
   if (!session) return <Login />
@@ -37,7 +49,9 @@ export default function App() {
             <NavLink to="/flujo-caja-arequipa">Flujo Caja Arequipa</NavLink>
           </nav>
           <div style={{ marginTop: 32, display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <button className="btn" onClick={() => syncTodo()}>Sincronizar Calendar</button>
+            <button className="btn" onClick={handleSync} disabled={sincronizando}>
+              {sincronizando ? 'Sincronizando...' : 'Sincronizar Calendar'}
+            </button>
             <button className="btn secondary" onClick={signOut}>Cerrar sesion</button>
           </div>
         </aside>
