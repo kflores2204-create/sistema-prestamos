@@ -6,6 +6,7 @@ const fecha = (d) => new Date(d).toLocaleDateString('es-PE')
 
 export default function Cronograma() {
   const [opciones, setOpciones] = useState([])
+  const [busqueda, setBusqueda] = useState('')
   const [seleccion, setSeleccion] = useState('')
   const [prestamo, setPrestamo] = useState(null)
   const [cuotas, setCuotas] = useState([])
@@ -14,7 +15,8 @@ export default function Cronograma() {
     supabase
       .from('v_prestamo_resumen')
       .select('id, codigo, cliente, cuenta')
-      .order('fecha_prestamo', { ascending: false })
+      .order('cuenta', { ascending: true })
+      .order('codigo', { ascending: true })
       .then(({ data }) => setOpciones(data || []))
   }, [])
 
@@ -26,15 +28,26 @@ export default function Cronograma() {
       .then(({ data }) => setCuotas(data || []))
   }, [seleccion])
 
+  const filtradas = opciones.filter((o) => {
+    const texto = `${o.cliente} ${o.codigo} ${o.cuenta}`.toLowerCase()
+    return texto.includes(busqueda.toLowerCase())
+  })
+
   return (
     <div>
       <div className="no-print">
         <h2 style={{ color: 'var(--navy)' }}>Cronograma de Pagos</h2>
         <label>
-          Selecciona Cliente:
-          <select className="input" value={seleccion} onChange={(e) => setSeleccion(e.target.value)}>
-            <option value="">-- elegir --</option>
-            {opciones.map((o) => (
+          Buscar cliente o codigo:
+          <input
+            className="input" placeholder="Ej: Juan Perez o PR-CAJA-0012"
+            value={busqueda} onChange={(e) => setBusqueda(e.target.value)}
+          />
+        </label>
+        <label style={{ marginTop: 10 }}>
+          Selecciona Cliente: ({filtradas.length} resultado{filtradas.length === 1 ? '' : 's'})
+          <select className="input" size={Math.min(8, Math.max(4, filtradas.length))} value={seleccion} onChange={(e) => setSeleccion(e.target.value)}>
+            {filtradas.map((o) => (
               <option key={o.id} value={o.id}>{o.cuenta} | {o.cliente} | {o.codigo}</option>
             ))}
           </select>
