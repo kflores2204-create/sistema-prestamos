@@ -7,12 +7,14 @@ const money = (n) => `S/. ${Number(n || 0).toLocaleString('es-PE', { minimumFrac
 const fechaCorta = (d) => new Date(d).toLocaleDateString('es-PE')
 const estadoClass = (e) => e.toLowerCase().replace(' ', '-')
 const toDateInput = (d) => new Date(d).toISOString().slice(0, 10)
-const ESTADOS = ['Todos', 'ACTIVO', 'EN PROCESO', 'ATRASADO', 'FINALIZADO']
+const ESTADOS = ['ACTIVO', 'EN PROCESO', 'ATRASADO', 'FINALIZADO']
 
 export default function Prestamos() {
   const { cuenta } = useParams()
   const [prestamos, setPrestamos] = useState([])
-  const [filtroEstado, setFiltroEstado] = useState('Todos')
+  const [filtroEstados, setFiltroEstados] = useState(new Set(ESTADOS))
+  const [busqueda, setBusqueda] = useState('')
+  const [ordenFecha, setOrdenFecha] = useState('desc')
   const [expanded, setExpanded] = useState(null)
   const [cuotasDetalle, setCuotasDetalle] = useState([])
   const [editando, setEditando] = useState(false)
@@ -20,19 +22,27 @@ export default function Prestamos() {
   const [guardando, setGuardando] = useState(false)
 
   async function cargar() {
-    const { data } = await supabase
-      .from('v_prestamo_resumen')
-      .select('*')
-      .eq('cuenta', cuenta)
-      .order('fecha_prestamo', { ascending: false })
+    const { data } = await supabase.from('v_prestamo_resumen').select('*').eq('cuenta', cuenta)
     setPrestamos(data || [])
   }
 
-  useEffect(() => { cargar(); cerrarDrawer() }, [cuenta])
+  useEffect(() => { cargar(); cerrarDrawer(); setFiltroEstados(new Set(ESTADOS)); setBusqueda('') }, [cuenta])
 
   function cerrarDrawer() {
     setExpanded(null)
     setEditando(false)
+  }
+
+  function toggleEstado(e) {
+    setFiltroEstados((prev) => {
+      const next = new Set(prev)
+      if (next.has(e)) next.delete(e); else next.add(e)
+      return next
+    })
+  }
+
+  function toggleTodos() {
+    setFiltroEstados((prev) => (prev.size === ESTADOS.length ? new Set() : new Set(ESTADOS)))
   }
 
   async function toggleCuota(cuota, prestamo) {
@@ -119,30 +129,52 @@ export default function Prestamos() {
     cargar()
   }
 
-  const filtrados = prestamos.filter((p) => filtroEstado === 'Todos' || p.estado === filtroEstado)
+  const filtrados = prestamos
+    .filter((p) => filtroEstados.has(p.estado))
+    .filter((p) => {
+      if (!busqueda) return true
+      const t = `${p.cliente} ${p.cliente_dni || ''} ${p.codigo}`.toLowerCase()
+      return t.includes(busqueda.toLowerCase())
+    })
+    .sort((a, b) => {
+      const da = new Date(a.fecha_prestamo), db = new Date(b.fecha_prestamo)
+      return ordenFecha === 'asc' ? da - db : db - da
+    })
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, flexWrap: 'wrap', gap: 12 }}>
         <h2 style={{ color: 'var(--navy)', margin: 0 }}>Prestamos {cuenta}</h2>
-        <div className="filtro-chips">
-          {ESTADOS.map((e) => (
-            <button
-              key={e}
-              className={`chip ${filtroEstado === e ? 'chip-active' : ''}`}
-              onClick={() => setFiltroEstado(e)}
-            >
-              {e === 'Todos' ? 'Todos' : e.charAt(0) + e.slice(1).toLowerCase()}
-            </button>
-          ))}
-        </div>
+        <input
+          className="input" style={{ maxWidth: 280 }}
+          placeholder="Buscar por nombre, DNI o codigo..."
+          value={busqueda} onChange={(e) => setBusqueda(e.target.value)}
+        />
+      </div>
+
+      <div className="filtro-chips" style={{ marginBottom: 16 }}>
+        <button className={`chip ${filtroEstados.size === ESTADOS.length ? 'chip-active' : ''}`} onClick={toggleTodos}>
+          Todos
+        </button>
+        {ESTADOS.map((e) => (
+          <button
+            key={e}
+            className={`chip ${filtroEstados.has(e) ? 'chip-active' : ''}`}
+            onClick={() => toggleEstado(e)}
+          >
+            {e.charAt(0) + e.slice(1).toLowerCase()}
+          </button>
+        ))}
       </div>
 
       <table>
         <thead>
           <tr>
-            <th>Codigo</th><th>Cliente</th><th>Fecha</th><th>Capital</th>
-            <th>Total a Pagar</th><th>Saldo</th><th>Estado</th>
+            <th>Codigo</th><th>Cliente</th><th>DNI</th>
+            <th className="th-ordenable" onClick={() => setOrdenFecha((o) => (o === 'asc' ? 'desc' : 'asc'))}>
+              Fecha {ordenFecha === 'asc' ? '↑' : '↓'}
+            </th>
+            <th>Capital</th><th>Total a Pagar</th><th>Saldo</th><th>Estado</th>
           </tr>
         </thead>
         <tbody>
@@ -150,6 +182,7 @@ export default function Prestamos() {
             <tr key={p.id} onClick={() => abrirDetalle(p.id)} style={{ cursor: 'pointer' }}>
               <td>{p.codigo}</td>
               <td>{p.cliente}</td>
+              <td>{p.cliente_dni || '—'}</td>
               <td>{fechaCorta(p.fecha_prestamo)}</td>
               <td>{money(p.capital)}</td>
               <td>{money(p.total_a_pagar)}</td>
@@ -158,7 +191,7 @@ export default function Prestamos() {
             </tr>
           ))}
           {filtrados.length === 0 && (
-            <tr><td colSpan={7} style={{ textAlign: 'center', color: 'var(--muted)' }}>No hay prestamos con este estado.</td></tr>
+            <tr><td colSpan={8} style={{ textAlign: 'center', color: 'var(--muted)' }}>No hay prestamos con estos filtros.</td></tr>
           )}
         </tbody>
       </table>
