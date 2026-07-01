@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { HashRouter, Routes, Route, NavLink, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, NavLink, Navigate } from 'react-router-dom'
 import { supabase, signOut } from './lib/supabase'
 import { syncTodo } from './lib/calendarSync'
 import Login from './pages/Login'
@@ -20,7 +20,7 @@ export default function App() {
   if (!session) return <Login />
 
   return (
-    <HashRouter>
+    <BrowserRouter>
       <div className="app-shell">
         <aside className="sidebar">
           <h1>Sistema de Prestamos</h1>
@@ -43,6 +43,6 @@ export default function App() {
           </Routes>
         </main>
       </div>
-    </HashRouter>
+    </BrowserRouter>
   )
 }
