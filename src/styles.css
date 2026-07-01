@@ -135,3 +135,6 @@ label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; font-w
 .drawer-close:hover { background: var(--red-bg); color: var(--red); }
 .drawer-info p { margin: 4px 0; font-size: 14px; color: var(--text); }
 .drawer-info { margin-bottom: 16px; }
+
+.th-ordenable { cursor: pointer; user-select: none; }
+.th-ordenable:hover { background: #150a63; }
