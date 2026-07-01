@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
+import { FRECUENCIAS, fechaCuota } from '../lib/prestamoUtils'
 
 const CUENTAS = ['BBVA', 'Caja Arequipa', 'Intereses']
 const PREFIX = { BBVA: 'BBVA', 'Caja Arequipa': 'CAJA', Intereses: 'INT' }
@@ -59,6 +60,9 @@ export default function NuevoPrestamo() {
   const [capital, setCapital] = useState('')
   const [tasa, setTasa] = useState('0.2')
   const [cuotas, setCuotas] = useState('4')
+  const [frecuencia, setFrecuencia] = useState('semanal')
+  const [tieneRecargo, setTieneRecargo] = useState(false)
+  const [recargoPct, setRecargoPct] = useState('5')
 
   const [clienteDni, setClienteDni] = useState('')
   const [clienteNombre, setClienteNombre] = useState('')
@@ -116,6 +120,7 @@ export default function NuevoPrestamo() {
           codigo, cuenta_id: cuentaRow.id, cliente_id: clienteId, aval_id: avalId,
           fecha_prestamo: fecha, capital: Number(capital),
           tasa_interes: Number(tasa), num_cuotas: Number(cuotas),
+          frecuencia, recargo_pct: tieneRecargo ? Number(recargoPct) / 100 : null,
         })
         .select()
         .single()
@@ -124,8 +129,7 @@ export default function NuevoPrestamo() {
       const nuevasCuotas = []
       const fechaBase = new Date(fecha + 'T00:00:00')
       for (let n = 1; n <= Number(cuotas); n++) {
-        const f = new Date(fechaBase)
-        f.setDate(f.getDate() + 7 * n)
+        const f = fechaCuota(fechaBase, n, frecuencia)
         nuevasCuotas.push({
           prestamo_id: prestamo.id, numero_cuota: n,
           fecha_vencimiento: f.toISOString().slice(0, 10),
@@ -138,6 +142,7 @@ export default function NuevoPrestamo() {
       setEstado({ cargando: false, mensaje: `Prestamo ${codigo} creado correctamente.`, error: false })
       setClienteDni(''); setClienteNombre(''); setCapital('')
       setTieneAval(false); setAvalDni(''); setAvalNombre('')
+      setFrecuencia('semanal'); setTieneRecargo(false); setRecargoPct('5')
     } catch (err) {
       setEstado({ cargando: false, mensaje: err.message, error: true })
     }
@@ -189,6 +194,23 @@ export default function NuevoPrestamo() {
           Numero de cuotas
           <input className="input" type="number" min="1" max="6" required value={cuotas} onChange={(e) => setCuotas(e.target.value)} />
         </label>
+        <label>
+          Frecuencia de pago
+          <select className="input" value={frecuencia} onChange={(e) => setFrecuencia(e.target.value)}>
+            {FRECUENCIAS.map((f) => <option key={f.value} value={f.value}>{f.label}</option>)}
+          </select>
+        </label>
+
+        <label style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <input type="checkbox" checked={tieneRecargo} onChange={(e) => setTieneRecargo(e.target.checked)} />
+          Aplicar recargo por atraso (opcional)
+        </label>
+        {tieneRecargo && (
+          <label>
+            % de recargo sobre la cuota vencida (ej. 5 = 5%)
+            <input className="input" type="number" min="0" step="0.1" value={recargoPct} onChange={(e) => setRecargoPct(e.target.value)} />
+          </label>
+        )}
         <button className="btn" type="submit" disabled={estado.cargando}>
           {estado.cargando ? 'Guardando...' : 'Registrar prestamo'}
         </button>
