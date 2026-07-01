@@ -97,25 +97,25 @@ export default function Clientes() {
         onChange={(e) => setBusqueda(e.target.value)}
       />
 
-      <table>
+      <table className="table-cards">
         <thead><tr><th style={{ width: 120 }}>DNI</th><th>Nombre</th><th style={{ width: 200 }}></th></tr></thead>
         <tbody>
           {filtrados.map((c) => (
             <tr key={c.id}>
               {editId === c.id ? (
                 <>
-                  <td><input className="input" value={editForm.dni} onChange={(e) => setEditForm((f) => ({ ...f, dni: e.target.value }))} maxLength={8} /></td>
-                  <td><input className="input" value={editForm.nombre} onChange={(e) => setEditForm((f) => ({ ...f, nombre: e.target.value }))} /></td>
-                  <td style={{ display: 'flex', gap: 6 }}>
+                  <td data-label="DNI"><input className="input" value={editForm.dni} onChange={(e) => setEditForm((f) => ({ ...f, dni: e.target.value }))} maxLength={8} /></td>
+                  <td data-label="Nombre"><input className="input" value={editForm.nombre} onChange={(e) => setEditForm((f) => ({ ...f, nombre: e.target.value }))} /></td>
+                  <td data-label="" style={{ display: 'flex', gap: 6 }}>
                     <button className="btn" style={{ padding: '6px 12px', fontSize: 12 }} onClick={() => guardarEdicion(c.id)} disabled={guardando}>Guardar</button>
                     <button className="btn secondary" style={{ padding: '6px 12px', fontSize: 12 }} onClick={() => setEditId(null)}>Cancelar</button>
                   </td>
                 </>
               ) : (
                 <>
-                  <td>{c.dni || <span style={{ color: 'var(--muted)' }}>Sin DNI</span>}</td>
-                  <td>{c.nombre}</td>
-                  <td style={{ display: 'flex', gap: 6 }}>
+                  <td data-label="DNI">{c.dni || <span style={{ color: 'var(--muted)' }}>Sin DNI</span>}</td>
+                  <td data-label="Nombre">{c.nombre}</td>
+                  <td data-label="" style={{ display: 'flex', gap: 6 }}>
                     <button className="chip" onClick={() => verHistorial(c)}>Ver historial</button>
                     <button className="chip" onClick={() => empezarEdicion(c)}>Editar</button>
                     <button className="chip" onClick={() => empezarFusion(c)}>Fusionar</button>
@@ -200,20 +200,20 @@ export default function Clientes() {
             </div>
 
             <h4 style={{ color: 'var(--navy)' }}>Historial de prestamos</h4>
-            <table>
+            <table className="table-cards">
               <thead><tr><th>Codigo</th><th>Cuenta</th><th>Fecha</th><th>Capital</th><th>Estado</th></tr></thead>
               <tbody>
                 {historial.prestamos.map((p) => (
                   <tr key={p.id}>
-                    <td>{p.codigo}</td>
-                    <td>{p.cuenta}</td>
-                    <td>{fechaCorta(p.fecha_prestamo)}</td>
-                    <td>{money(p.capital)}</td>
-                    <td><span className={`badge ${estadoClass(p.estado)}`}>{p.estado}</span></td>
+                    <td data-label="Codigo">{p.codigo}</td>
+                    <td data-label="Cuenta">{p.cuenta}</td>
+                    <td data-label="Fecha">{fechaCorta(p.fecha_prestamo)}</td>
+                    <td data-label="Capital">{money(p.capital)}</td>
+                    <td data-label="Estado"><span className={`badge ${estadoClass(p.estado)}`}>{p.estado}</span></td>
                   </tr>
                 ))}
                 {historial.prestamos.length === 0 && (
-                  <tr><td colSpan={5} style={{ textAlign: 'center', color: 'var(--muted)' }}>Sin prestamos registrados.</td></tr>
+                  <tr><td data-label="" colSpan={5} style={{ textAlign: 'center', color: 'var(--muted)' }}>Sin prestamos registrados.</td></tr>
                 )}
               </tbody>
             </table>
