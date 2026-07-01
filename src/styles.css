@@ -136,5 +136,9 @@ label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; font-w
 .drawer-info p { margin: 4px 0; font-size: 14px; color: var(--text); }
 .drawer-info { margin-bottom: 16px; }
 
+.select-estado { padding: 4px 8px; font-size: 13px; width: auto; font-weight: 600; border-radius: 6px; }
+.select-estado.pendiente { background: var(--yellow-bg); color: var(--yellow); border-color: var(--yellow); }
+.select-estado.pagado { background: var(--green-bg); color: var(--green); border-color: var(--green); }
+
 .th-ordenable { cursor: pointer; user-select: none; }
 .th-ordenable:hover { background: #150a63; }
