@@ -77,28 +77,40 @@ export default function Cronograma() {
 
       {prestamo && (
         <div className="cronograma-print">
-          <h1 style={{ color: 'var(--navy)' }}>CRONOGRAMA DE PAGOS</h1>
-          <table>
-            <tbody>
-              <tr><td><b>Cliente</b></td><td>{prestamo.cliente}</td></tr>
-              {prestamo.cliente_dni && <tr><td><b>DNI</b></td><td>{prestamo.cliente_dni}</td></tr>}
-              {prestamo.aval_nombre && <tr><td><b>Aval / Recomendado</b></td><td>{prestamo.aval_nombre}</td></tr>}
-              <tr><td><b>Cuenta</b></td><td>{prestamo.cuenta}</td></tr>
-              <tr><td><b>Fecha de Prestamo</b></td><td>{fecha(prestamo.fecha_prestamo)}</td></tr>
-              <tr><td><b>Capital Prestado</b></td><td>{money(prestamo.capital)}</td></tr>
-              <tr><td><b>Tasa de Interes</b></td><td>{(prestamo.tasa_interes * 100).toFixed(0)}%</td></tr>
-              <tr><td><b>Total a Pagar</b></td><td>{money(prestamo.total_a_pagar)}</td></tr>
-            </tbody>
-          </table>
+          <div className="cronograma-header">
+            <img src="/logo-confianza.jpeg" alt="Confianza Prestamos" className="cronograma-logo" />
+            <div className="cronograma-header-box">
+              <div className="cronograma-header-box-title">CRONOGRAMA DE PAGOS</div>
+              <div>{prestamo.codigo}</div>
+              <div>Generado: {new Date().toLocaleDateString('es-PE')}</div>
+            </div>
+          </div>
 
-          <h3 style={{ color: 'var(--navy)', marginTop: 24 }}>Detalle de Cuotas</h3>
-          <table>
+          <div className="cronograma-ficha">
+            <span>CLIENTE</span><b>{prestamo.cliente}</b>
+            <span>FECHA DE PRESTAMO</span><b>{fecha(prestamo.fecha_prestamo)}</b>
+
+            <div className="cronograma-ficha-divider" />
+            <span>{prestamo.cliente_dni ? 'DNI' : ''}</span><b>{prestamo.cliente_dni || ''}</b>
+            <span>CAPITAL PRESTADO</span><b>{money(prestamo.capital)}</b>
+
+            <div className="cronograma-ficha-divider" />
+            <span>{prestamo.aval_nombre ? 'AVAL / RECOMENDADO' : ''}</span><b>{prestamo.aval_nombre || ''}</b>
+            <span>TASA DE INTERES</span><b>{(prestamo.tasa_interes * 100).toFixed(0)}%</b>
+          </div>
+          <div className="cronograma-total">
+            <span>TOTAL A PAGAR</span>
+            <b>{money(prestamo.total_a_pagar)}</b>
+          </div>
+
+          <h3 className="cronograma-subtitulo">Detalle de Cuotas</h3>
+          <table className="cronograma-tabla">
             <thead>
               <tr><th>N Cuota</th><th>Fecha de Pago</th><th>Monto</th><th>Estado</th></tr>
             </thead>
             <tbody>
-              {cuotas.map((c) => (
-                <tr key={c.id}>
+              {cuotas.map((c, i) => (
+                <tr key={c.id} className={i % 2 === 1 ? 'cronograma-fila-par' : ''}>
                   <td>{c.numero_cuota}</td>
                   <td>{fecha(c.fecha_vencimiento)}</td>
                   <td>
@@ -114,9 +126,10 @@ export default function Cronograma() {
               ))}
             </tbody>
           </table>
-          <p style={{ marginTop: 24, color: 'var(--muted)', fontStyle: 'italic' }}>
-            Generado el {new Date().toLocaleDateString('es-PE')} - Gracias por su confianza.
-          </p>
+
+          <div className="cronograma-footer">
+            Confianza Prestamos · Soluciones que te acercan. Gracias por su confianza.
+          </div>
         </div>
       )}
     </div>
