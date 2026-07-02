@@ -257,30 +257,32 @@ input[type="date"].input::-webkit-calendar-picker-indicator:hover { opacity: 1; 
 /* Dropdown de estado de cuota con colores por opcion */
 .estado-select { position: relative; }
 .estado-select-btn {
-  display: flex; align-items: center; gap: 8px; border: 1.5px solid transparent;
-  border-radius: 8px; padding: 5px 10px; font-size: 13px; font-weight: 700;
+  display: flex; align-items: center; gap: 6px; border: none;
+  border-radius: 7px; padding: 5px 10px; font-size: 13px; font-weight: 600;
   cursor: pointer; font-family: inherit;
 }
-.estado-select-btn.pendiente { background: var(--yellow-bg); color: var(--yellow); border-color: var(--yellow); }
-.estado-select-btn.pagado { background: var(--green-bg); color: var(--green); border-color: var(--green); }
-.estado-select-chevron { font-size: 11px; transition: transform .15s ease; }
+.estado-select-btn.pendiente { background: var(--yellow-bg); color: var(--yellow); }
+.estado-select-btn.pagado { background: var(--green-bg); color: var(--green); }
+.estado-select-chevron { font-size: 10px; opacity: 0.7; transition: transform .15s ease; }
 .estado-select-chevron.open { transform: rotate(180deg); }
 .estado-select-dropdown {
-  position: absolute; top: calc(100% + 4px); right: 0; z-index: 30; min-width: 120px; max-width: 70vw;
+  position: absolute; top: calc(100% + 4px); right: 0; z-index: 30; min-width: 130px; max-width: 70vw;
   background: white; border: 1px solid var(--border); border-radius: 10px;
-  box-shadow: 0 8px 24px rgba(10,0,77,0.14); overflow: hidden; padding: 4px;
+  box-shadow: 0 8px 24px rgba(10,0,77,0.12); overflow: hidden; padding: 4px;
 }
 .estado-select-dropdown.abrir-arriba {
   top: auto; bottom: calc(100% + 4px);
 }
 .estado-select-option {
-  padding: 8px 12px; font-size: 13px; font-weight: 700; border-radius: 7px; cursor: pointer; margin-bottom: 2px;
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 10px; font-size: 13px; font-weight: 500; color: var(--text);
+  border-radius: 6px; cursor: pointer;
 }
-.estado-select-option:last-child { margin-bottom: 0; }
-.estado-select-option.pendiente { background: var(--yellow-bg); color: var(--yellow); }
-.estado-select-option.pagado { background: var(--green-bg); color: var(--green); }
-.estado-select-option.selected { outline: 2px solid rgba(10,0,77,0.25); outline-offset: -2px; }
-.estado-select-option:hover { filter: brightness(0.97); }
+.estado-select-option:hover { background: var(--bg); }
+.estado-select-option-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.estado-select-option.pendiente .estado-select-option-dot { background: var(--yellow); }
+.estado-select-option.pagado .estado-select-option-dot { background: var(--green); }
+.estado-select-option.selected { font-weight: 700; color: var(--navy); }
 
 .th-ordenable { cursor: pointer; user-select: none; }
 .th-ordenable:hover { background: #150a63; }
