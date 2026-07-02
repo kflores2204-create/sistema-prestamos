@@ -125,8 +125,8 @@ tbody tr:hover { background: #fafafe; }
   table.table-cards { border-radius: 0; background: transparent; }
   table.table-cards tbody { display: flex; flex-direction: column; gap: 14px; }
   table.table-cards tr {
-    background: var(--card); border: 1px solid var(--border); border-radius: 14px;
-    overflow: hidden; box-shadow: 0 1px 4px rgba(10,0,77,0.06);
+    background: var(--card); border: 1px solid rgba(10,0,77,0.14); border-radius: 14px;
+    overflow: hidden; box-shadow: 0 2px 8px rgba(10,0,77,0.12);
   }
   table.table-cards td {
     display: flex; justify-content: space-between; align-items: center; gap: 12px;
@@ -135,7 +135,7 @@ tbody tr:hover { background: #fafafe; }
   table.table-cards td:last-child { border-bottom: none; }
   /* la primera celda con dato actua de encabezado de la tarjeta: fondo suave + texto mas fuerte */
   table.table-cards td[data-label]:first-child {
-    background: var(--bg); padding: 12px 14px;
+    background: rgba(10,0,77,0.08); border-bottom: 1px solid rgba(10,0,77,0.12); padding: 12px 14px;
   }
   table.table-cards td[data-label]:first-child::before {
     color: var(--navy); font-size: 11px;
