@@ -217,11 +217,12 @@ tbody tr:hover { background: #fafafe; }
   display: flex; align-items: center; justify-content: center; min-height: 100vh;
   padding: 24px; background: linear-gradient(160deg, var(--navy) 0%, #1b0d7a 100%);
 }
+.login-wrap { display: flex; flex-direction: column; align-items: center; width: 100%; max-width: 440px; }
 .login-card {
-  background: white; border-radius: 20px; padding: 40px 36px; max-width: 440px; width: 100%;
+  background: white; border-radius: 20px; padding: 40px 36px; width: 100%;
   text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.25);
 }
-.login-logo { height: 64px; width: auto; max-width: 100%; object-fit: contain; margin: 0 auto 24px; }
+.login-logo { height: 92px; width: auto; max-width: 100%; object-fit: contain; margin: 0 auto 24px; }
 .login-card p { font-size: 14px; color: var(--muted); line-height: 1.5; margin: 0 0 28px; }
 .login-google-btn {
   width: 100%; background: white; color: var(--text); border: 1.5px solid var(--border);
