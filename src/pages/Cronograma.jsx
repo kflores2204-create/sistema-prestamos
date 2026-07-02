@@ -85,7 +85,7 @@ export default function Cronograma() {
       {prestamo && (
         <div className="cronograma-print">
           <div className="cronograma-header">
-            <img src="/logo-confianza.jpeg" alt="Confianza Prestamos" className="cronograma-logo" />
+            <img src="/logo-confianza-horizontal.png" alt="Confianza Prestamos" className="cronograma-logo" />
             <div className="cronograma-header-box">
               <div className="cronograma-header-box-title">CRONOGRAMA DE PAGOS</div>
               <div>Ref. {referenciaCliente(prestamo.id)}</div>
