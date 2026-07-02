@@ -15,6 +15,7 @@ import FlujoCajaArequipa from './pages/FlujoCajaArequipa'
 import Clientes from './pages/Clientes'
 import Cobros from './pages/Cobros'
 import Equipo from './pages/Equipo'
+import Privacidad from './pages/Privacidad'
 import './styles.css'
 
 const MODULOS = [
@@ -113,16 +114,9 @@ function Sidebar({ user, sincronizando, handleSync, sidebarOpen, setSidebarOpen 
   )
 }
 
-export default function App() {
-  const [session, setSession] = useState(undefined) // undefined = cargando
+function AppAutenticada({ session }) {
   const [sincronizando, setSincronizando] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(false)
-
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => setSession(data.session))
-    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => setSession(s))
-    return () => sub.subscription.unsubscribe()
-  }, [])
 
   async function handleSync() {
     setSincronizando(true)
@@ -135,33 +129,50 @@ export default function App() {
     setSincronizando(false)
   }
 
+  return (
+    <div className="app-shell">
+      <button className="hamburger-btn no-print" onClick={() => setSidebarOpen((o) => !o)} aria-label="Abrir menu">
+        ☰
+      </button>
+      <Sidebar
+        user={session.user} sincronizando={sincronizando} handleSync={handleSync}
+        sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen}
+      />
+      <main className="main">
+        <Routes>
+          <Route path="/" element={<Dashboard />} />
+          <Route path="/cobros" element={<Cobros />} />
+          <Route path="/prestamos/:cuenta" element={<Prestamos />} />
+          <Route path="/nuevo" element={<NuevoPrestamo />} />
+          <Route path="/clientes" element={<Clientes />} />
+          <Route path="/cronograma" element={<Cronograma />} />
+          <Route path="/flujo-caja-arequipa" element={<FlujoCajaArequipa />} />
+          <Route path="/equipo" element={<Equipo />} />
+          <Route path="*" element={<Navigate to="/" />} />
+        </Routes>
+      </main>
+    </div>
+  )
+}
+
+export default function App() {
+  const [session, setSession] = useState(undefined) // undefined = cargando
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => setSession(data.session))
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => setSession(s))
+    return () => sub.subscription.unsubscribe()
+  }, [])
+
   if (session === undefined) return null
-  if (!session) return <Login />
 
   return (
     <BrowserRouter>
-      <div className="app-shell">
-        <button className="hamburger-btn no-print" onClick={() => setSidebarOpen((o) => !o)} aria-label="Abrir menu">
-          ☰
-        </button>
-        <Sidebar
-          user={session.user} sincronizando={sincronizando} handleSync={handleSync}
-          sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen}
-        />
-        <main className="main">
-          <Routes>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/cobros" element={<Cobros />} />
-            <Route path="/prestamos/:cuenta" element={<Prestamos />} />
-            <Route path="/nuevo" element={<NuevoPrestamo />} />
-            <Route path="/clientes" element={<Clientes />} />
-            <Route path="/cronograma" element={<Cronograma />} />
-            <Route path="/flujo-caja-arequipa" element={<FlujoCajaArequipa />} />
-            <Route path="/equipo" element={<Equipo />} />
-            <Route path="*" element={<Navigate to="/" />} />
-          </Routes>
-        </main>
-      </div>
+      <Routes>
+        {/* publica: Google necesita poder acceder a esta pagina sin iniciar sesion */}
+        <Route path="/privacidad" element={<Privacidad />} />
+        <Route path="/*" element={session ? <AppAutenticada session={session} /> : <Login />} />
+      </Routes>
     </BrowserRouter>
   )
 }
