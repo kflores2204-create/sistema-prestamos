@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { BrowserRouter, Routes, Route, NavLink, Navigate, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard, Wallet, Landmark, Building2, Percent,
-  PlusCircle, Users, CalendarDays, TrendingUp, RefreshCw, LogOut,
+  PlusCircle, Users, CalendarDays, TrendingUp, RefreshCw, LogOut, UserCog,
 } from 'lucide-react'
 import { supabase, signOut } from './lib/supabase'
 import { syncTodo } from './lib/calendarSync'
@@ -14,6 +14,7 @@ import Cronograma from './pages/Cronograma'
 import FlujoCajaArequipa from './pages/FlujoCajaArequipa'
 import Clientes from './pages/Clientes'
 import Cobros from './pages/Cobros'
+import Equipo from './pages/Equipo'
 import './styles.css'
 
 const MODULOS = [
@@ -26,6 +27,7 @@ const MODULOS = [
   { to: '/clientes', label: 'Clientes', icon: Users },
   { to: '/cronograma', label: 'Cronograma Cliente', icon: CalendarDays },
   { to: '/flujo-caja-arequipa', label: 'Flujo Caja Arequipa', icon: TrendingUp },
+  { to: '/equipo', label: 'Equipo', icon: UserCog },
 ]
 
 function ConfirmModal({ titulo, mensaje, onCancelar, onConfirmar }) {
@@ -155,6 +157,7 @@ export default function App() {
             <Route path="/clientes" element={<Clientes />} />
             <Route path="/cronograma" element={<Cronograma />} />
             <Route path="/flujo-caja-arequipa" element={<FlujoCajaArequipa />} />
+            <Route path="/equipo" element={<Equipo />} />
             <Route path="*" element={<Navigate to="/" />} />
           </Routes>
         </main>
