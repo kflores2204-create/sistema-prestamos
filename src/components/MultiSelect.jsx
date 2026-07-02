@@ -52,7 +52,7 @@ export default function MultiSelect({ options, selected, onChange, placeholder =
     <div className="multiselect" ref={ref}>
       <div className="multiselect-box" onClick={() => setOpen((o) => !o)}>
         {selected.size === 0 && <span className="multiselect-placeholder">{placeholder}</span>}
-        {[...selected].map((opt) => (
+        {options.filter((opt) => selected.has(opt)).map((opt) => (
           <span key={opt} className="multiselect-chip">
             {label(opt)}
             <button type="button" onClick={(e) => removeChip(opt, e)} aria-label={`Quitar ${label(opt)}`}>×</button>
