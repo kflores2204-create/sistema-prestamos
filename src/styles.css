@@ -245,8 +245,9 @@ label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; font-w
 /* Filtro multi-select con chips (estados, etc.) */
 .multiselect { position: relative; width: 100%; max-width: 460px; }
 .multiselect-box {
+  position: relative;
   display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
-  min-height: 42px; padding: 6px 10px; border: 1px solid var(--border); border-radius: 10px;
+  min-height: 42px; padding: 6px 34px 6px 10px; border: 1px solid var(--border); border-radius: 10px;
   background: white; cursor: pointer;
 }
 .multiselect-box:hover { border-color: var(--navy); }
@@ -262,7 +263,9 @@ label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; font-w
   display: flex; align-items: center; justify-content: center; padding: 0;
 }
 .multiselect-chip button:hover { background: rgba(255,255,255,0.32); }
-.multiselect-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; padding-left: 4px; }
+.multiselect-actions {
+  position: absolute; top: 9px; right: 10px; display: flex; align-items: center; gap: 6px;
+}
 .multiselect-clear {
   border: none; background: transparent; color: var(--muted); font-size: 16px;
   cursor: pointer; line-height: 1; padding: 0 2px;
