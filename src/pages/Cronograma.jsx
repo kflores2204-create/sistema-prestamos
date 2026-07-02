@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { montoConRecargo, tieneRecargoAplicado, formatFecha } from '../lib/prestamoUtils'
+import { Printer } from 'lucide-react'
 
 const money = (n) => `S/. ${Number(n || 0).toLocaleString('es-PE', { minimumFractionDigits: 2 })}`
 const fecha = formatFecha
@@ -69,7 +70,7 @@ export default function Cronograma() {
         </div>
         {prestamo && (
           <button className="btn" style={{ marginTop: 16 }} onClick={() => window.print()}>
-            Descargar / Imprimir PDF
+            <Printer size={16} strokeWidth={2.4} /> Descargar / Imprimir PDF
           </button>
         )}
       </div>
