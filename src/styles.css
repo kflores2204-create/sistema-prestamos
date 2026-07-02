@@ -123,15 +123,27 @@ tbody tr:hover { background: #fafafe; }
   table.table-cards thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
   table.table-cards, table.table-cards tbody, table.table-cards tr, table.table-cards td { display: block; width: 100%; }
   table.table-cards { border-radius: 0; background: transparent; }
+  table.table-cards tbody { display: flex; flex-direction: column; gap: 14px; }
   table.table-cards tr {
-    background: var(--card); border: 1px solid var(--border); border-radius: 12px;
-    margin-bottom: 10px; padding: 4px 14px; overflow: hidden;
+    background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+    overflow: hidden; box-shadow: 0 1px 4px rgba(10,0,77,0.06);
   }
   table.table-cards td {
     display: flex; justify-content: space-between; align-items: center; gap: 12px;
-    padding: 9px 0; border-bottom: 1px solid var(--border); font-size: 14px; text-align: right;
+    padding: 10px 14px; border-bottom: 1px solid var(--border); font-size: 14px; text-align: right;
   }
   table.table-cards td:last-child { border-bottom: none; }
+  /* la primera celda con dato actua de encabezado de la tarjeta: fondo suave + texto mas fuerte */
+  table.table-cards td[data-label]:first-child {
+    background: var(--bg); padding: 12px 14px;
+  }
+  table.table-cards td[data-label]:first-child::before {
+    color: var(--navy); font-size: 11px;
+  }
+  table.table-cards td[data-label]:first-child > *:not(.badge),
+  table.table-cards td[data-label]:first-child {
+    font-weight: 700; color: var(--navy); font-size: 15px;
+  }
   table.table-cards td[data-label]::before {
     content: attr(data-label); font-weight: 600; color: var(--muted); font-size: 12px;
     text-transform: uppercase; letter-spacing: 0.03em; text-align: left; flex-shrink: 0;
