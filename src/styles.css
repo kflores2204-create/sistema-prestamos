@@ -232,6 +232,12 @@ tbody tr:hover { background: #fafafe; }
   justify-content: center;
 }
 .login-google-btn:hover { background: var(--bg); opacity: 1; }
+.login-switch {
+  display: block; width: 100%; text-align: center; margin-top: 14px;
+  background: none; border: none; color: var(--muted); font-size: 13px; cursor: pointer;
+  text-decoration: underline; text-underline-offset: 2px;
+}
+.login-switch:hover { color: var(--navy); }
 
 label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; font-weight: 600; color: var(--navy); }
 .input {
