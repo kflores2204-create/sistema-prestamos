@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { Check } from 'lucide-react'
 
 const OPCIONES = [
   { value: 'Pendiente', className: 'pendiente' },
@@ -55,7 +56,9 @@ export default function EstadoSelect({ value, onChange }) {
               className={`estado-select-option ${o.className} ${o.value === value ? 'selected' : ''}`}
               onClick={() => { onChange(o.value); setOpen(false) }}
             >
+              <span className="estado-select-option-dot" />
               {o.value}
+              {o.value === value && <Check size={13} strokeWidth={3} style={{ marginLeft: 'auto' }} />}
             </div>
           ))}
         </div>
