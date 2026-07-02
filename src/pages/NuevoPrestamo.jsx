@@ -23,25 +23,27 @@ function BuscadorPersona({ label, dni, nombre, onChangeDni, onChangeNombre, pers
   }
 
   return (
-    <div className="buscador-persona">
-      <label>{label}
-        <input
-          className="input" placeholder="Buscar por DNI o nombre..." value={query}
-          onChange={(e) => { setQuery(e.target.value); setAbierto(true) }}
-          onFocus={() => setAbierto(true)}
-          onBlur={() => setTimeout(() => setAbierto(false), 150)}
-        />
-      </label>
-      {abierto && sugerencias.length > 0 && (
-        <div className="autocomplete-dropdown">
-          {sugerencias.map((p) => (
-            <div key={p.id} className="autocomplete-item" onMouseDown={() => elegir(p)}>
-              <span className="autocomplete-dni">{p.dni || 'S/N'}</span>
-              <span>{p.nombre}</span>
-            </div>
-          ))}
-        </div>
-      )}
+    <div className="buscador-persona-wrap">
+      <div className="buscador-persona">
+        <label>{label}
+          <input
+            className="input" placeholder="Buscar por DNI o nombre..." value={query}
+            onChange={(e) => { setQuery(e.target.value); setAbierto(true) }}
+            onFocus={() => setAbierto(true)}
+            onBlur={() => setTimeout(() => setAbierto(false), 150)}
+          />
+        </label>
+        {abierto && sugerencias.length > 0 && (
+          <div className="autocomplete-dropdown">
+            {sugerencias.map((p) => (
+              <div key={p.id} className="autocomplete-item" onMouseDown={() => elegir(p)}>
+                <span className="autocomplete-dni">{p.dni || 'S/N'}</span>
+                <span>{p.nombre}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
       <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
         <label style={{ flex: 1 }}>DNI
           <input className="input" value={dni} onChange={(e) => onChangeDni(e.target.value)} maxLength={8} required={required} />
