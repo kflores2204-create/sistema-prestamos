@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { syncCuota } from '../lib/calendarSync'
 import { FRECUENCIAS, fechaCuota, montoConRecargo, tieneRecargoAplicado, estaAtrasada, formatFecha } from '../lib/prestamoUtils'
+import MultiSelect from '../components/MultiSelect'
 
 const money = (n) => `S/. ${Number(n || 0).toLocaleString('es-PE', { minimumFractionDigits: 2 })}`
 const fechaCorta = formatFecha
@@ -32,18 +33,6 @@ export default function Prestamos() {
   function cerrarDrawer() {
     setExpanded(null)
     setEditando(false)
-  }
-
-  function toggleEstado(e) {
-    setFiltroEstados((prev) => {
-      const next = new Set(prev)
-      if (next.has(e)) next.delete(e); else next.add(e)
-      return next
-    })
-  }
-
-  function toggleTodos() {
-    setFiltroEstados((prev) => (prev.size === ESTADOS.length ? new Set() : new Set(ESTADOS)))
   }
 
   async function cambiarEstadoCuota(cuota, nuevoEstado, prestamo) {
@@ -171,19 +160,14 @@ export default function Prestamos() {
         />
       </div>
 
-      <div className="filtro-chips" style={{ marginBottom: 16 }}>
-        <button className={`chip ${filtroEstados.size === ESTADOS.length ? 'chip-active' : ''}`} onClick={toggleTodos}>
-          Todos
-        </button>
-        {ESTADOS.map((e) => (
-          <button
-            key={e}
-            className={`chip ${filtroEstados.has(e) ? 'chip-active' : ''}`}
-            onClick={() => toggleEstado(e)}
-          >
-            {e.charAt(0) + e.slice(1).toLowerCase()}
-          </button>
-        ))}
+      <div style={{ marginBottom: 16 }}>
+        <MultiSelect
+          options={ESTADOS}
+          selected={filtroEstados}
+          onChange={setFiltroEstados}
+          placeholder="Filtrar por estado..."
+          labelFor={(e) => e.charAt(0) + e.slice(1).toLowerCase()}
+        />
       </div>
 
       <table className="table-cards">
