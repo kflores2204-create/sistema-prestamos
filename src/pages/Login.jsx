@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { Wallet } from 'lucide-react'
 import { signInWithGoogle, signInWithPassword } from '../lib/supabase'
 
 function GoogleIcon() {
@@ -35,8 +34,7 @@ export default function Login() {
   return (
     <div className="login-screen">
       <div className="login-card">
-        <div className="login-icon"><Wallet size={26} strokeWidth={2.2} /></div>
-        <h1>Sistema de Prestamos</h1>
+        <img src="/logo-confianza-horizontal.png" alt="Confianza Prestamos" className="login-logo" />
         <p>Panel personal de gestion de prestamos.</p>
 
         {!modoCorreo ? (
