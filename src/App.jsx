@@ -28,8 +28,46 @@ const MODULOS = [
   { to: '/flujo-caja-arequipa', label: 'Flujo Caja Arequipa', icon: TrendingUp },
 ]
 
-function Sidebar({ sincronizando, handleSync, sidebarOpen, setSidebarOpen }) {
+function ConfirmModal({ titulo, mensaje, onCancelar, onConfirmar }) {
+  return (
+    <div className="modal-backdrop" onClick={onCancelar}>
+      <div className="confirm-modal" onClick={(e) => e.stopPropagation()}>
+        <h3>{titulo}</h3>
+        <p>{mensaje}</p>
+        <div className="confirm-modal-actions">
+          <button className="btn secondary" onClick={onCancelar}>Cancelar</button>
+          <button className="btn" style={{ background: 'var(--red-bg)', color: 'var(--red)' }} onClick={onConfirmar}>
+            Cerrar sesion
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function UserProfile({ user }) {
+  const meta = user?.user_metadata || {}
+  const nombre = meta.full_name || meta.name || 'Usuario'
+  const email = user?.email || ''
+  const iniciales = nombre.split(' ').map((p) => p[0]).slice(0, 2).join('').toUpperCase()
+
+  return (
+    <div className="user-profile">
+      {meta.avatar_url
+        ? <img className="user-profile-avatar" src={meta.avatar_url} alt={nombre} referrerPolicy="no-referrer" />
+        : <div className="user-profile-avatar user-profile-avatar-fallback">{iniciales}</div>
+      }
+      <div className="user-profile-info">
+        <div className="user-profile-name">{nombre}</div>
+        <div className="user-profile-email">{email}</div>
+      </div>
+    </div>
+  )
+}
+
+function Sidebar({ user, sincronizando, handleSync, sidebarOpen, setSidebarOpen }) {
   const location = useLocation()
+  const [confirmando, setConfirmando] = useState(false)
 
   // cierra el menu automaticamente al navegar (comportamiento esperado en celular)
   useEffect(() => { setSidebarOpen(false) }, [location.pathname])
@@ -52,12 +90,23 @@ function Sidebar({ sincronizando, handleSync, sidebarOpen, setSidebarOpen }) {
             <RefreshCw size={16} strokeWidth={2.4} className={sincronizando ? 'spin' : ''} />
             {sincronizando ? 'Sincronizando...' : 'Sincronizar Calendar'}
           </button>
-          <button className="btn secondary" onClick={signOut}>
+        </div>
+        <div className="sidebar-footer">
+          <UserProfile user={user} />
+          <button className="btn secondary" style={{ width: '100%' }} onClick={() => setConfirmando(true)}>
             <LogOut size={16} strokeWidth={2.4} />
             Cerrar sesion
           </button>
         </div>
       </aside>
+      {confirmando && (
+        <ConfirmModal
+          titulo="Cerrar sesion"
+          mensaje="¿Estas seguro que deseas cerrar sesion?"
+          onCancelar={() => setConfirmando(false)}
+          onConfirmar={signOut}
+        />
+      )}
     </>
   )
 }
@@ -94,7 +143,7 @@ export default function App() {
           ☰
         </button>
         <Sidebar
-          sincronizando={sincronizando} handleSync={handleSync}
+          user={session.user} sincronizando={sincronizando} handleSync={handleSync}
           sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen}
         />
         <main className="main">
