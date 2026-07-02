@@ -6,6 +6,13 @@ import { Printer } from 'lucide-react'
 const money = (n) => `S/. ${Number(n || 0).toLocaleString('es-PE', { minimumFractionDigits: 2 })}`
 const fecha = formatFecha
 
+// Referencia neutral para el cliente: no debe revelar de que cuenta interna (BBVA,
+// Caja Arequipa, Intereses) sale el dinero. Se deriva del id interno del prestamo
+// (UUID), asi que no requiere tocar la base de datos ni el codigo interno existente.
+function referenciaCliente(id) {
+  return (id || '').replace(/-/g, '').slice(0, 8).toUpperCase()
+}
+
 export default function Cronograma() {
   const [opciones, setOpciones] = useState([])
   const [query, setQuery] = useState('')
@@ -81,22 +88,18 @@ export default function Cronograma() {
             <img src="/logo-confianza.jpeg" alt="Confianza Prestamos" className="cronograma-logo" />
             <div className="cronograma-header-box">
               <div className="cronograma-header-box-title">CRONOGRAMA DE PAGOS</div>
-              <div>{prestamo.codigo}</div>
+              <div>Ref. {referenciaCliente(prestamo.id)}</div>
               <div>Generado: {new Date().toLocaleDateString('es-PE')}</div>
             </div>
           </div>
 
           <div className="cronograma-ficha">
-            <span>CLIENTE</span><b>{prestamo.cliente}</b>
-            <span>FECHA DE PRESTAMO</span><b>{fecha(prestamo.fecha_prestamo)}</b>
-
-            <div className="cronograma-ficha-divider" />
-            <span>{prestamo.cliente_dni ? 'DNI' : ''}</span><b>{prestamo.cliente_dni || ''}</b>
-            <span>CAPITAL PRESTADO</span><b>{money(prestamo.capital)}</b>
-
-            <div className="cronograma-ficha-divider" />
-            <span>{prestamo.aval_nombre ? 'AVAL / RECOMENDADO' : ''}</span><b>{prestamo.aval_nombre || ''}</b>
-            <span>TASA DE INTERES</span><b>{(prestamo.tasa_interes * 100).toFixed(0)}%</b>
+            <div className="cronograma-ficha-item"><span>CLIENTE</span><b>{prestamo.cliente}</b></div>
+            {prestamo.cliente_dni && <div className="cronograma-ficha-item"><span>DNI</span><b>{prestamo.cliente_dni}</b></div>}
+            {prestamo.aval_nombre && <div className="cronograma-ficha-item"><span>AVAL / RECOMENDADO</span><b>{prestamo.aval_nombre}</b></div>}
+            <div className="cronograma-ficha-item"><span>FECHA DE PRESTAMO</span><b>{fecha(prestamo.fecha_prestamo)}</b></div>
+            <div className="cronograma-ficha-item"><span>CAPITAL PRESTADO</span><b>{money(prestamo.capital)}</b></div>
+            <div className="cronograma-ficha-item"><span>TASA DE INTERES</span><b>{(prestamo.tasa_interes * 100).toFixed(0)}%</b></div>
           </div>
           <div className="cronograma-total">
             <span>TOTAL A PAGAR</span>
