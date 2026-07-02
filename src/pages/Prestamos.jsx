@@ -234,14 +234,14 @@ export default function Prestamos() {
                   </button>
                 </div>
 
-                <table>
+                <table className="table-cards">
                   <thead><tr><th>N</th><th>Fecha</th><th>Monto</th><th>Estado</th></tr></thead>
                   <tbody>
                     {cuotasDetalle.map((c) => (
                       <tr key={c.id}>
-                        <td>{c.numero_cuota}</td>
-                        <td>{fechaCorta(c.fecha_vencimiento)}</td>
-                        <td>
+                        <td data-label="Cuota N">{c.numero_cuota}</td>
+                        <td data-label="Fecha">{fechaCorta(c.fecha_vencimiento)}</td>
+                        <td data-label="Monto">
                           {money(montoConRecargo(c, expanded.recargo_pct))}
                           {tieneRecargoAplicado(c, expanded.recargo_pct) && (
                             <div style={{ fontSize: 11, color: 'var(--red)' }}>
@@ -249,7 +249,7 @@ export default function Prestamos() {
                             </div>
                           )}
                         </td>
-                        <td>
+                        <td data-label="Estado">
                           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                             <EstadoSelect
                               value={c.estado}
