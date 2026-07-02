@@ -234,6 +234,31 @@ tbody tr:hover { background: #fafafe; }
   text-decoration: underline; text-underline-offset: 2px;
 }
 .login-switch:hover { color: var(--navy); }
+.privacidad-link {
+  display: block; text-align: center; margin-top: 20px; color: rgba(255,255,255,0.6);
+  font-size: 12px; text-decoration: none;
+}
+.privacidad-link:hover { color: white; text-decoration: underline; }
+
+/* Pagina publica de politica de privacidad */
+.privacidad-screen { min-height: 100vh; background: var(--bg); padding: 40px 20px; }
+.privacidad-card {
+  background: white; border-radius: 16px; padding: 40px; max-width: 720px; margin: 0 auto;
+  box-shadow: 0 4px 20px rgba(10,0,77,0.08);
+}
+.privacidad-header { display: flex; align-items: center; gap: 16px; margin-bottom: 8px; }
+.login-icon-fallback {
+  width: 44px; height: 44px; border-radius: 12px; background: var(--navy); color: white;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.privacidad-header h1 { font-size: 22px; color: var(--navy); margin: 0; }
+.privacidad-subtitle { color: var(--muted); font-size: 13px; margin: 2px 0 0; }
+.privacidad-fecha { color: var(--muted); font-size: 12px; margin: 0 0 24px; }
+.privacidad-card h2 { color: var(--navy); font-size: 16px; margin: 28px 0 10px; }
+.privacidad-card p { font-size: 14px; line-height: 1.7; color: var(--text); margin: 0 0 12px; }
+.privacidad-card ul { margin: 0 0 12px; padding-left: 20px; }
+.privacidad-card li { font-size: 14px; line-height: 1.7; color: var(--text); margin-bottom: 6px; }
+.privacidad-card a { color: var(--navy); font-weight: 600; }
 
 label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; font-weight: 600; color: var(--navy); }
 .input {
