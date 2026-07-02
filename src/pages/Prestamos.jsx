@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
+import { Pencil, Trash2 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { syncCuota } from '../lib/calendarSync'
 import { FRECUENCIAS, fechaCuota, montoConRecargo, tieneRecargoAplicado, estaAtrasada, formatFecha } from '../lib/prestamoUtils'
 import MultiSelect from '../components/MultiSelect'
+import EstadoSelect from '../components/EstadoSelect'
 
 const money = (n) => `S/. ${Number(n || 0).toLocaleString('es-PE', { minimumFractionDigits: 2 })}`
 const fechaCorta = formatFecha
@@ -224,8 +226,12 @@ export default function Prestamos() {
                 </div>
 
                 <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
-                  <button className="btn secondary" onClick={empezarEdicion}>Editar</button>
-                  <button className="btn" style={{ background: 'var(--red-bg)', color: 'var(--red)' }} onClick={eliminarPrestamo}>Eliminar</button>
+                  <button className="btn secondary" onClick={empezarEdicion}>
+                    <Pencil size={15} strokeWidth={2.4} /> Editar
+                  </button>
+                  <button className="btn" style={{ background: 'var(--red-bg)', color: 'var(--red)' }} onClick={eliminarPrestamo}>
+                    <Trash2 size={15} strokeWidth={2.4} /> Eliminar
+                  </button>
                 </div>
 
                 <table>
@@ -245,14 +251,10 @@ export default function Prestamos() {
                         </td>
                         <td>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                            <select
-                              className={`select-estado ${c.estado.toLowerCase()}`}
+                            <EstadoSelect
                               value={c.estado}
-                              onChange={(e) => cambiarEstadoCuota(c, e.target.value, expanded)}
-                            >
-                              <option value="Pendiente">Pendiente</option>
-                              <option value="Pagado">Pagado</option>
-                            </select>
+                              onChange={(nuevo) => cambiarEstadoCuota(c, nuevo, expanded)}
+                            />
                             {estaAtrasada(c) && (
                               <span className="badge atrasado">Atrasado</span>
                             )}
