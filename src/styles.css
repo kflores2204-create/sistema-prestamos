@@ -131,16 +131,17 @@ tbody tr:hover { background: #fafafe; }
   table.table-cards tbody { display: flex; flex-direction: column; gap: 14px; }
   table.table-cards tr {
     background: var(--card); border: 1px solid rgba(10,0,77,0.14); border-radius: 14px;
-    overflow: hidden; box-shadow: 0 2px 8px rgba(10,0,77,0.12);
+    box-shadow: 0 2px 8px rgba(10,0,77,0.12);
   }
   table.table-cards td {
     display: flex; justify-content: space-between; align-items: center; gap: 12px;
     padding: 10px 14px; border-bottom: 1px solid var(--border); font-size: 14px; text-align: right;
   }
-  table.table-cards td:last-child { border-bottom: none; }
+  table.table-cards td:last-child { border-bottom: none; border-radius: 0 0 14px 14px; }
   /* la primera celda con dato actua de encabezado de la tarjeta: fondo suave + texto mas fuerte */
   table.table-cards td[data-label]:first-child {
     background: rgba(10,0,77,0.08); border-bottom: 1px solid rgba(10,0,77,0.12); padding: 12px 14px;
+    border-radius: 14px 14px 0 0;
   }
   table.table-cards td[data-label]:first-child::before {
     color: var(--navy); font-size: 11px;
@@ -149,6 +150,7 @@ tbody tr:hover { background: #fafafe; }
   table.table-cards td[data-label]:first-child {
     font-weight: 700; color: var(--navy); font-size: 15px;
   }
+  table.table-cards td[data-label]:first-child:last-child { border-radius: 14px; }
   table.table-cards td[data-label]::before {
     content: attr(data-label); font-weight: 600; color: var(--muted); font-size: 12px;
     text-transform: uppercase; letter-spacing: 0.03em; text-align: left; flex-shrink: 0;
