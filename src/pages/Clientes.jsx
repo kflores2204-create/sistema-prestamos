@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { formatFecha } from '../lib/prestamoUtils'
+import { History, Pencil, Merge, Check, X as XIcon } from 'lucide-react'
 
 const money = (n) => `S/. ${Number(n || 0).toLocaleString('es-PE', { minimumFractionDigits: 2 })}`
 const fechaCorta = formatFecha
@@ -107,8 +108,12 @@ export default function Clientes() {
                   <td data-label="DNI"><input className="input" value={editForm.dni} onChange={(e) => setEditForm((f) => ({ ...f, dni: e.target.value }))} maxLength={8} /></td>
                   <td data-label="Nombre"><input className="input" value={editForm.nombre} onChange={(e) => setEditForm((f) => ({ ...f, nombre: e.target.value }))} /></td>
                   <td data-label="" style={{ display: 'flex', gap: 6 }}>
-                    <button className="btn" style={{ padding: '6px 12px', fontSize: 12 }} onClick={() => guardarEdicion(c.id)} disabled={guardando}>Guardar</button>
-                    <button className="btn secondary" style={{ padding: '6px 12px', fontSize: 12 }} onClick={() => setEditId(null)}>Cancelar</button>
+                    <button className="btn" style={{ padding: '6px 12px', fontSize: 12 }} onClick={() => guardarEdicion(c.id)} disabled={guardando}>
+                      <Check size={14} strokeWidth={2.6} /> Guardar
+                    </button>
+                    <button className="btn secondary" style={{ padding: '6px 12px', fontSize: 12 }} onClick={() => setEditId(null)}>
+                      <XIcon size={14} strokeWidth={2.6} /> Cancelar
+                    </button>
                   </td>
                 </>
               ) : (
@@ -116,9 +121,15 @@ export default function Clientes() {
                   <td data-label="DNI">{c.dni || <span style={{ color: 'var(--muted)' }}>Sin DNI</span>}</td>
                   <td data-label="Nombre">{c.nombre}</td>
                   <td data-label="" style={{ display: 'flex', gap: 6 }}>
-                    <button className="chip" onClick={() => verHistorial(c)}>Ver historial</button>
-                    <button className="chip" onClick={() => empezarEdicion(c)}>Editar</button>
-                    <button className="chip" onClick={() => empezarFusion(c)}>Fusionar</button>
+                    <button className="chip" onClick={() => verHistorial(c)}>
+                      <History size={13} strokeWidth={2.4} /> Ver historial
+                    </button>
+                    <button className="chip" onClick={() => empezarEdicion(c)}>
+                      <Pencil size={13} strokeWidth={2.4} /> Editar
+                    </button>
+                    <button className="chip" onClick={() => empezarFusion(c)}>
+                      <Merge size={13} strokeWidth={2.4} /> Fusionar
+                    </button>
                   </td>
                 </>
               )}
