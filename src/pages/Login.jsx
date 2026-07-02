@@ -1,5 +1,6 @@
+import { useState } from 'react'
 import { Wallet } from 'lucide-react'
-import { signInWithGoogle } from '../lib/supabase'
+import { signInWithGoogle, signInWithPassword } from '../lib/supabase'
 
 function GoogleIcon() {
   return (
@@ -13,15 +14,57 @@ function GoogleIcon() {
 }
 
 export default function Login() {
+  const [modoCorreo, setModoCorreo] = useState(false)
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState('')
+  const [cargando, setCargando] = useState(false)
+
+  async function entrarConCorreo(e) {
+    e.preventDefault()
+    setError('')
+    setCargando(true)
+    try {
+      await signInWithPassword(email, password)
+    } catch (err) {
+      setError('Correo o contraseña incorrectos.')
+    }
+    setCargando(false)
+  }
+
   return (
     <div className="login-screen">
       <div className="login-card">
         <div className="login-icon"><Wallet size={26} strokeWidth={2.2} /></div>
         <h1>Sistema de Prestamos</h1>
-        <p>Panel personal de gestion de prestamos. Acceso solo con tu cuenta de Google.</p>
-        <button className="btn login-google-btn" onClick={signInWithGoogle}>
-          <GoogleIcon /> Entrar con Google
-        </button>
+        <p>Panel personal de gestion de prestamos.</p>
+
+        {!modoCorreo ? (
+          <>
+            <button className="btn login-google-btn" onClick={signInWithGoogle}>
+              <GoogleIcon /> Entrar con Google
+            </button>
+            <button className="login-switch" onClick={() => setModoCorreo(true)}>
+              Entrar con correo y contraseña
+            </button>
+          </>
+        ) : (
+          <form onSubmit={entrarConCorreo} style={{ textAlign: 'left', display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <label>Correo
+              <input className="input" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+            </label>
+            <label>Contraseña
+              <input className="input" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} />
+            </label>
+            {error && <p style={{ color: 'var(--red)', fontSize: 13, margin: 0 }}>{error}</p>}
+            <button className="btn" type="submit" disabled={cargando} style={{ justifyContent: 'center' }}>
+              {cargando ? 'Ingresando...' : 'Ingresar'}
+            </button>
+            <button type="button" className="login-switch" onClick={() => setModoCorreo(false)}>
+              Volver a entrar con Google
+            </button>
+          </form>
+        )}
       </div>
     </div>
   )
