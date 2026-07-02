@@ -64,6 +64,7 @@ export default function Login() {
           </form>
         )}
       </div>
+      <a href="/privacidad" className="privacidad-link">Politica de privacidad</a>
     </div>
   )
 }
