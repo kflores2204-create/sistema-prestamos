@@ -33,38 +33,40 @@ export default function Login() {
 
   return (
     <div className="login-screen">
-      <div className="login-card">
-        <img src="/logo-confianza-horizontal.png" alt="Confianza Prestamos" className="login-logo" />
-        <p>Panel personal de gestion de prestamos.</p>
+      <div className="login-wrap">
+        <div className="login-card">
+          <img src="/logo-confianza-horizontal.png" alt="Confianza Prestamos" className="login-logo" />
+          <p>Panel personal de gestion de prestamos.</p>
 
-        {!modoCorreo ? (
-          <>
-            <button className="btn login-google-btn" onClick={signInWithGoogle}>
-              <GoogleIcon /> Entrar con Google
-            </button>
-            <button className="login-switch" onClick={() => setModoCorreo(true)}>
-              Entrar con correo y contraseña
-            </button>
-          </>
-        ) : (
-          <form onSubmit={entrarConCorreo} style={{ textAlign: 'left', display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <label>Correo
-              <input className="input" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
-            </label>
-            <label>Contraseña
-              <input className="input" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} />
-            </label>
-            {error && <p style={{ color: 'var(--red)', fontSize: 13, margin: 0 }}>{error}</p>}
-            <button className="btn" type="submit" disabled={cargando} style={{ justifyContent: 'center' }}>
-              {cargando ? 'Ingresando...' : 'Ingresar'}
-            </button>
-            <button type="button" className="login-switch" onClick={() => setModoCorreo(false)}>
-              Volver a entrar con Google
-            </button>
-          </form>
-        )}
+          {!modoCorreo ? (
+            <>
+              <button className="btn login-google-btn" onClick={signInWithGoogle}>
+                <GoogleIcon /> Entrar con Google
+              </button>
+              <button className="login-switch" onClick={() => setModoCorreo(true)}>
+                Entrar con correo y contraseña
+              </button>
+            </>
+          ) : (
+            <form onSubmit={entrarConCorreo} style={{ textAlign: 'left', display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <label>Correo
+                <input className="input" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+              </label>
+              <label>Contraseña
+                <input className="input" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} />
+              </label>
+              {error && <p style={{ color: 'var(--red)', fontSize: 13, margin: 0 }}>{error}</p>}
+              <button className="btn" type="submit" disabled={cargando} style={{ justifyContent: 'center' }}>
+                {cargando ? 'Ingresando...' : 'Ingresar'}
+              </button>
+              <button type="button" className="login-switch" onClick={() => setModoCorreo(false)}>
+                Volver a entrar con Google
+              </button>
+            </form>
+          )}
+        </div>
+        <a href="/privacidad" className="privacidad-link">Politica de privacidad</a>
       </div>
-      <a href="/privacidad" className="privacidad-link">Politica de privacidad</a>
     </div>
   )
 }
