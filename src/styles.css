@@ -218,14 +218,10 @@ tbody tr:hover { background: #fafafe; }
   padding: 24px; background: linear-gradient(160deg, var(--navy) 0%, #1b0d7a 100%);
 }
 .login-card {
-  background: white; border-radius: 20px; padding: 40px 36px; max-width: 380px; width: 100%;
+  background: white; border-radius: 20px; padding: 40px 36px; max-width: 440px; width: 100%;
   text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.25);
 }
-.login-icon {
-  width: 52px; height: 52px; border-radius: 14px; background: var(--navy); color: white;
-  display: flex; align-items: center; justify-content: center; margin: 0 auto 20px;
-}
-.login-card h1 { font-size: 20px; color: var(--navy); margin: 0 0 10px; }
+.login-logo { height: 64px; width: auto; max-width: 100%; object-fit: contain; margin: 0 auto 24px; }
 .login-card p { font-size: 14px; color: var(--muted); line-height: 1.5; margin: 0 0 28px; }
 .login-google-btn {
   width: 100%; background: white; color: var(--text); border: 1.5px solid var(--border);
@@ -255,7 +251,7 @@ input[type="date"].input::-webkit-calendar-picker-indicator:hover { opacity: 1; 
 .cronograma-print { background: white; border: 1px solid var(--border); border-radius: 12px; padding: 36px; max-width: 720px; font-family: Arial, Helvetica, sans-serif; }
 
 .cronograma-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; margin-bottom: 24px; }
-.cronograma-logo { height: 56px; width: auto; object-fit: contain; }
+.cronograma-logo { height: 76px; width: auto; object-fit: contain; }
 .cronograma-header-box {
   background: var(--navy); color: white; border-radius: 10px; padding: 12px 18px;
   font-size: 12px; line-height: 1.7; text-align: right; min-width: 180px;
