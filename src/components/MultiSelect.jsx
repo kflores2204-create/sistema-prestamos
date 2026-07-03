@@ -1,22 +1,26 @@
 import { useEffect, useRef, useState } from 'react'
 
 /**
- * Filtro multi-select con caja cerrada de UNA sola linea y altura fija
- * (igual a un <select> nativo / un .input), para que nunca se deforme ni
- * quede mas grande/chico que los campos vecinos, sin importar cuantas
- * opciones tenga seleccionadas. El detalle (chips, checkboxes) vive
- * unicamente dentro del desplegable, no en la caja cerrada.
+ * Filtro multi-select.
+ * - Por defecto (todas las opciones seleccionadas) muestra una caja de una
+ *   sola linea con el placeholder (ej. "Todas las cuentas"), igual a un
+ *   <select> nativo.
+ * - En cuanto el usuario desmarca alguna opcion (seleccion parcial), la caja
+ *   muestra chips individuales removibles. Los chips viven en su propia
+ *   columna que puede crecer HACIA ABAJO (nunca cambia el ancho de la caja),
+ *   y las acciones (limpiar / flecha) quedan fijas en su propia columna a la
+ *   derecha, por lo que nunca se tapan con los chips sin importar cuantas
+ *   lineas ocupen.
  *
- * Semantica: "selected" vacio = sin filtro (equivalente a "todas/todos"),
- * es responsabilidad del componente padre interpretarlo asi al filtrar.
- * Empezar vacio y dejar que el usuario elija activamente es el
- * comportamiento esperado en todo el sistema.
+ * Semantica: por defecto TODAS las opciones deben venir seleccionadas
+ * (asi el resumen muestra el placeholder). Es responsabilidad del
+ * componente padre inicializar "selected" con todas las opciones.
  *
  * Props:
  *  options: string[]           -> todas las opciones posibles
- *  selected: Set<string>       -> opciones actualmente seleccionadas (vacio = todas)
+ *  selected: Set<string>       -> opciones actualmente seleccionadas
  *  onChange: (Set<string>) => void
- *  placeholder: string         -> texto cuando no hay nada seleccionado (ej. "Todas las cuentas")
+ *  placeholder: string         -> texto cuando estan todas seleccionadas (ej. "Todas las cuentas")
  *  labelFor: (opcion) => string  -> texto a mostrar (opcional, por defecto la opcion misma)
  */
 export default function MultiSelect({ options, selected, onChange, placeholder = 'Seleccionar...', labelFor }) {
@@ -42,27 +46,40 @@ export default function MultiSelect({ options, selected, onChange, placeholder =
     onChange(next)
   }
 
-  function clearAll(e) {
+  function removeChip(opt, e) {
     e.stopPropagation()
-    onChange(new Set())
+    const next = new Set(selected)
+    next.delete(opt)
+    onChange(next)
   }
 
-  const resumen = selected.size === 0
-    ? placeholder
-    : selected.size === 1
-      ? label([...selected][0])
-      : `${selected.size} seleccionadas`
+  function clearAll(e) {
+    e.stopPropagation()
+    onChange(new Set(options))
+  }
+
+  const todasSeleccionadas = selected.size === options.length
+  const ningunaSeleccionada = selected.size === 0
 
   return (
     <div className="multiselect" ref={ref}>
       <div className="multiselect-box" onClick={() => setOpen((o) => !o)}>
-        <span className={selected.size === 0 ? 'multiselect-placeholder' : 'multiselect-summary'}>{resumen}</span>
-        <span className="multiselect-actions">
-          {selected.size > 0 && (
-            <button type="button" className="multiselect-clear" onClick={clearAll} aria-label="Limpiar todo">×</button>
+        <div className="multiselect-chips">
+          {todasSeleccionadas && <span className="multiselect-placeholder">{placeholder}</span>}
+          {ningunaSeleccionada && <span className="multiselect-placeholder">Ninguno seleccionado</span>}
+          {!todasSeleccionadas && !ningunaSeleccionada && options.filter((opt) => selected.has(opt)).map((opt) => (
+            <span key={opt} className="multiselect-chip">
+              {label(opt)}
+              <button type="button" onClick={(e) => removeChip(opt, e)} aria-label={`Quitar ${label(opt)}`}>×</button>
+            </span>
+          ))}
+        </div>
+        <div className="multiselect-actions">
+          {!todasSeleccionadas && (
+            <button type="button" className="multiselect-clear" onClick={clearAll} aria-label="Seleccionar todos">×</button>
           )}
           <span className={`multiselect-chevron ${open ? 'open' : ''}`}>▾</span>
-        </span>
+        </div>
       </div>
       {open && (
         <div className="multiselect-dropdown">
