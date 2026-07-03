@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
+import { Plus } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { FRECUENCIAS, fechaCuota, hoyISO } from '../lib/prestamoUtils'
 
@@ -20,6 +21,13 @@ function BuscadorPersona({ label, dni, nombre, onChangeDni, onChangeNombre, pers
     setAbierto(false)
   }
 
+  function crearNuevo() {
+    onChangeDni('')
+    onChangeNombre(query.trim())
+    setQuery(query.trim())
+    setAbierto(false)
+  }
+
   return (
     <div className="buscador-persona-wrap">
       <div className="buscador-persona">
@@ -31,8 +39,11 @@ function BuscadorPersona({ label, dni, nombre, onChangeDni, onChangeNombre, pers
             onBlur={() => setTimeout(() => setAbierto(false), 150)}
           />
         </label>
-        {abierto && sugerencias.length > 0 && (
+        {abierto && query.length >= 2 && (
           <div className="autocomplete-dropdown">
+            <div className="autocomplete-crear" onMouseDown={crearNuevo}>
+              <Plus size={14} strokeWidth={2.6} /> Crear cliente nuevo: "{query.trim()}"
+            </div>
             {sugerencias.map((p) => (
               <div key={p.id} className="autocomplete-item" onMouseDown={() => elegir(p)}>
                 <span className="autocomplete-dni">{p.dni || 'S/N'}</span>
