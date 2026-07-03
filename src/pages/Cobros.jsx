@@ -37,7 +37,7 @@ export default function Cobros() {
 
   async function marcarPagado(cuota) {
     const { data: updated } = await supabase
-      .from('cuotas').update({ estado: 'Pagado' }).eq('id', cuota.id).select().single()
+      .from('cuotas').update({ estado: 'Pagado', fecha_pago: hoyISO() }).eq('id', cuota.id).select().single()
     try {
       await syncCuota(updated, {
         codigo: cuota.prestamos.codigo,
