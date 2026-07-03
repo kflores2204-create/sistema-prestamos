@@ -55,8 +55,8 @@ export default function FlujoCaja() {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 4 }}>
-        <Link to="/cuentas" className="volver-link"><ChevronLeft size={16} strokeWidth={2.4} /> Cuentas</Link>
+      <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: 4 }}>
+        <Link to="/cuentas" className="volver-link"><ChevronLeft size={18} strokeWidth={2.6} /> Cuentas</Link>
       </div>
       <h2 style={{ color: 'var(--navy)', marginTop: 4 }}>Flujo de Caja - {cuenta.nombre}</h2>
       <p style={{ color: 'var(--muted)' }}>Control del dinero disponible en esta cuenta.</p>
@@ -93,8 +93,22 @@ export default function FlujoCaja() {
         <p style={{ color: 'var(--muted)', fontSize: 13, margin: '2px 0 12px' }}>
           Vista de todo el historial de esta cuenta, igual a como la llevabas antes. No afecta el Saldo Actual de arriba.
         </p>
-        <div className="historico-linea"><span>Capital prestado a clientes, aun no recuperado (todos los prestamos)</span><b>- {money(capitalPendiente)}</b></div>
-        <div className="historico-linea"><span>Gastos / Retiros (historico completo)</span><b>- {money(gastosHistoricoTotal)}</b></div>
+        {cuenta.monto_prestamo_original ? (
+          <>
+            <div className="historico-linea"><span>Prestamo Inicial recibido</span><b style={{ color: 'var(--navy)' }}>{money(cuenta.monto_prestamo_original)}</b></div>
+            <div className="historico-linea"><span>(-) Capital prestado a clientes, aun no recuperado</span><b>- {money(capitalPendiente)}</b></div>
+            <div className="historico-linea"><span>(-) Gastos / Retiros (historico completo)</span><b>- {money(gastosHistoricoTotal)}</b></div>
+            <div className="historico-linea historico-total">
+              <span>Dinero disponible segun formula historica</span>
+              <b>{money(cuenta.monto_prestamo_original - capitalPendiente - gastosHistoricoTotal)}</b>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="historico-linea"><span>Capital prestado a clientes, aun no recuperado (todos los prestamos)</span><b>- {money(capitalPendiente)}</b></div>
+            <div className="historico-linea"><span>Gastos / Retiros (historico completo)</span><b>- {money(gastosHistoricoTotal)}</b></div>
+          </>
+        )}
       </div>
 
       <h3 style={{ color: 'var(--navy)' }}>Agregar gasto / retiro</h3>
