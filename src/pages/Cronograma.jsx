@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { montoConRecargo, tieneRecargoAplicado, formatFecha } from '../lib/prestamoUtils'
 import { Printer, ChevronLeft } from 'lucide-react'
+import MultiSelect from '../components/MultiSelect'
 
 const money = (n) => `S/. ${Number(n || 0).toLocaleString('es-PE', { minimumFractionDigits: 2 })}`
 const fecha = formatFecha
@@ -20,13 +21,18 @@ export default function Cronograma() {
   const [query, setQuery] = useState('')
   const [prestamo, setPrestamo] = useState(null)
   const [cuotas, setCuotas] = useState([])
+  const [filtroCuentas, setFiltroCuentas] = useState(new Set())
+  const [ordenFecha, setOrdenFecha] = useState('desc')
 
   useEffect(() => {
     supabase
       .from('v_prestamo_resumen')
       .select('id, codigo, cliente, cliente_dni, cuenta, fecha_prestamo')
       .order('fecha_prestamo', { ascending: false })
-      .then(({ data }) => setOpciones(data || []))
+      .then(({ data }) => {
+        setOpciones(data || [])
+        setFiltroCuentas(new Set((data || []).map((o) => o.cuenta)))
+      })
   }, [])
 
   // si venimos con ?id=... (ej. justo despues de crear un prestamo nuevo), lo
@@ -45,9 +51,15 @@ export default function Cronograma() {
       .then(({ data }) => setCuotas(data || []))
   }, [prestamo])
 
-  const filtrados = query.length >= 1
-    ? opciones.filter((o) => `${o.cliente} ${o.codigo} ${o.cliente_dni || ''}`.toLowerCase().includes(query.toLowerCase()))
-    : opciones
+  const cuentasDisponibles = [...new Set(opciones.map((o) => o.cuenta))]
+
+  const filtrados = opciones
+    .filter((o) => filtroCuentas.has(o.cuenta))
+    .filter((o) => query.length < 1 || `${o.cliente} ${o.codigo} ${o.cliente_dni || ''}`.toLowerCase().includes(query.toLowerCase()))
+    .sort((a, b) => {
+      const da = new Date(a.fecha_prestamo), db = new Date(b.fecha_prestamo)
+      return ordenFecha === 'asc' ? da - db : db - da
+    })
 
   async function elegir(o) {
     const { data } = await supabase.from('v_prestamo_resumen').select('*').eq('id', o.id).single()
@@ -130,16 +142,31 @@ export default function Cronograma() {
     <div>
       <h2 style={{ color: 'var(--navy)' }}>Cronograma de Pagos</h2>
       <p style={{ color: 'var(--muted)', marginTop: -8 }}>
-        Todos los prestamos. Busca por nombre, DNI o codigo para filtrar, o elegi uno de la lista.
+        Todos los prestamos. Busca por nombre, DNI o codigo, filtra por cuenta, o elegi uno de la lista.
       </p>
       <input
-        className="input search-box" style={{ marginBottom: 16 }}
+        className="input search-box" style={{ marginBottom: 12 }}
         placeholder="Buscar por nombre, DNI o codigo..."
         value={query} onChange={(e) => setQuery(e.target.value)}
       />
+      <div style={{ marginBottom: 16 }}>
+        <MultiSelect
+          options={cuentasDisponibles}
+          selected={filtroCuentas}
+          onChange={setFiltroCuentas}
+          placeholder="Filtrar por cuenta..."
+        />
+      </div>
 
       <table className="table-cards">
-        <thead><tr><th>Cliente</th><th>Codigo</th><th>Cuenta</th><th>Fecha</th></tr></thead>
+        <thead>
+          <tr>
+            <th>Cliente</th><th>Codigo</th><th>Cuenta</th>
+            <th className="th-ordenable" onClick={() => setOrdenFecha((o) => (o === 'asc' ? 'desc' : 'asc'))}>
+              Fecha {ordenFecha === 'asc' ? '↑' : '↓'}
+            </th>
+          </tr>
+        </thead>
         <tbody>
           {filtrados.map((o) => (
             <tr key={o.id} onClick={() => elegir(o)} style={{ cursor: 'pointer' }}>
