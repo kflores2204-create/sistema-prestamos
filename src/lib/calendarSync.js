@@ -68,14 +68,86 @@ function colorFor(fecha) {
   return COLOR.FUTURO
 }
 
+/** Busca en Google Calendar los eventos ya asociados a esta cuota (via extendedProperties),
+ *  sin importar lo que diga el ID guardado localmente. Esto es lo que hace que la sincronizacion
+ *  sea idempotente: no importa si el dato local quedo desactualizado (por ejemplo porque otra
+ *  persona sincronizo desde su propia cuenta, o porque hubo dos sincronizaciones superpuestas),
+ *  siempre se reconcilia contra lo que realmente existe en el calendario. */
+async function buscarEventosDeCuota(calendarId, token, cuotaId) {
+  const params = new URLSearchParams({
+    privateExtendedProperty: `cuota_id=${cuotaId}`,
+    showDeleted: 'false',
+    singleEvents: 'true',
+  })
+  const res = await gcal(`calendars/${calendarId}/events?${params.toString()}`, token)
+  return res.items || []
+}
+
+/**
+ * Limpieza unica: borra los duplicados que hayan quedado de sincronizaciones anteriores
+ * (antes de que cada evento tuviera su etiqueta interna de identificacion). Agrupa los
+ * eventos por fecha + texto exacto, y si hay mas de uno igual, deja solo uno.
+ * Se puede correr las veces que haga falta sin riesgo: si no hay duplicados, no borra nada.
+ */
+export async function limpiarDuplicados() {
+  const token = await getAccessToken()
+  const calendarId = await getOrCreateCalendarId(token)
+
+  const desde = new Date(); desde.setFullYear(desde.getFullYear() - 1)
+  const hasta = new Date(); hasta.setFullYear(hasta.getFullYear() + 1)
+
+  let eventos = []
+  let pageToken = null
+  do {
+    const params = new URLSearchParams({
+      timeMin: desde.toISOString(),
+      timeMax: hasta.toISOString(),
+      showDeleted: 'false',
+      singleEvents: 'true',
+      maxResults: '2500',
+      ...(pageToken ? { pageToken } : {}),
+    })
+    const res = await gcal(`calendars/${calendarId}/events?${params.toString()}`, token)
+    eventos = eventos.concat(res.items || [])
+    pageToken = res.nextPageToken || null
+  } while (pageToken)
+
+  // agrupamos por fecha + resumen exacto (asi es como se ven los duplicados viejos)
+  const grupos = new Map()
+  for (const ev of eventos) {
+    const clave = `${ev.start?.date || ev.start?.dateTime}|${ev.summary}`
+    if (!grupos.has(clave)) grupos.set(clave, [])
+    grupos.get(clave).push(ev)
+  }
+
+  let borrados = 0
+  for (const grupo of grupos.values()) {
+    if (grupo.length <= 1) continue
+    // dejamos el que ya tenga la etiqueta nueva (si hay uno), o si no, el primero
+    const conEtiqueta = grupo.find((ev) => ev.extendedProperties?.private?.cuota_id)
+    const aConservar = conEtiqueta || grupo[0]
+    for (const ev of grupo) {
+      if (ev.id === aConservar.id) continue
+      await gcal(`calendars/${calendarId}/events/${ev.id}`, token, { method: 'DELETE' }).catch(() => {})
+      borrados++
+    }
+  }
+  return borrados
+}
+
 /** Sincroniza una cuota puntual (llamar al marcar Pagado/Pendiente). */
 export async function syncCuota(cuota, prestamo) {
   const token = await getAccessToken()
   const calendarId = await getOrCreateCalendarId(token)
+  const existentes = await buscarEventosDeCuota(calendarId, token, cuota.id)
 
   if (cuota.estado === 'Pagado') {
+    // se borran todos los eventos encontrados (normalmente uno, pero si habia quedado
+    // un duplicado de antes, esto limpia todos los que correspondan a esta cuota)
+    for (const ev of existentes) {
+      await gcal(`calendars/${calendarId}/events/${ev.id}`, token, { method: 'DELETE' }).catch(() => {})
+    }
     if (cuota.calendar_event_id) {
-      await gcal(`calendars/${calendarId}/events/${cuota.calendar_event_id}`, token, { method: 'DELETE' }).catch(() => {})
       await supabase.from('cuotas').update({ calendar_event_id: null }).eq('id', cuota.id)
     }
     return
@@ -95,22 +167,22 @@ export async function syncCuota(cuota, prestamo) {
     start: { date: cuota.fecha_vencimiento },
     end: { date: cuota.fecha_vencimiento },
     colorId: colorFor(cuota.fecha_vencimiento),
+    extendedProperties: { private: { cuota_id: cuota.id } },
   }
 
-  if (cuota.calendar_event_id) {
-    try {
-      await gcal(`calendars/${calendarId}/events/${cuota.calendar_event_id}`, token, {
-        method: 'PATCH',
-        body: JSON.stringify(body),
-      })
-    } catch (err) {
-      // el evento guardado ya no existe (ej. se borro el calendario manualmente) -> crear uno nuevo
-      if (!String(err.message).includes('404')) throw err
-      const created = await gcal(`calendars/${calendarId}/events`, token, {
-        method: 'POST',
-        body: JSON.stringify(body),
-      })
-      await supabase.from('cuotas').update({ calendar_event_id: created.id }).eq('id', cuota.id)
+  if (existentes.length > 0) {
+    // actualizamos el primero que ya existe, y si habia quedado mas de uno duplicado
+    // de una sincronizacion anterior con el bug, aprovechamos para borrar los sobrantes
+    const [principal, ...duplicados] = existentes
+    await gcal(`calendars/${calendarId}/events/${principal.id}`, token, {
+      method: 'PATCH',
+      body: JSON.stringify(body),
+    })
+    for (const dup of duplicados) {
+      await gcal(`calendars/${calendarId}/events/${dup.id}`, token, { method: 'DELETE' }).catch(() => {})
+    }
+    if (cuota.calendar_event_id !== principal.id) {
+      await supabase.from('cuotas').update({ calendar_event_id: principal.id }).eq('id', cuota.id)
     }
   } else {
     const created = await gcal(`calendars/${calendarId}/events`, token, {
@@ -121,8 +193,12 @@ export async function syncCuota(cuota, prestamo) {
   }
 }
 
-/** Sincroniza TODAS las cuotas pendientes/atrasadas de una vez. Devuelve cuantas proceso. */
+/** Sincroniza TODAS las cuotas pendientes/atrasadas de una vez. Devuelve cuantas proceso.
+ *  Antes de sincronizar, limpia en silencio cualquier duplicado que haya podido quedar de
+ *  sincronizaciones anteriores (esto es automatico, no requiere ninguna accion del usuario). */
 export async function syncTodo() {
+  await limpiarDuplicados()
+
   const { data: cuotas, error } = await supabase
     .from('cuotas')
     .select('*, prestamos(codigo, num_cuotas, recargo_pct, cliente:clientes!prestamos_cliente_id_fkey(nombre), cuenta:cuentas(nombre))')
