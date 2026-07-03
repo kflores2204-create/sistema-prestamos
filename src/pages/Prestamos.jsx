@@ -153,6 +153,13 @@ export default function Prestamos() {
       return ordenFecha === 'asc' ? da - db : db - da
     })
 
+  const totales = filtrados.reduce((acc, p) => {
+    acc.capital += Number(p.capital || 0)
+    acc.totalPagar += Number(p.total_a_pagar || 0)
+    acc.saldo += Number(p.saldo_pendiente || 0)
+    return acc
+  }, { capital: 0, totalPagar: 0, saldo: 0 })
+
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: 4 }}>
@@ -175,6 +182,12 @@ export default function Prestamos() {
           placeholder="Filtrar por estado..."
           labelFor={(e) => e.charAt(0) + e.slice(1).toLowerCase()}
         />
+      </div>
+
+      <div className="kpi-grid" style={{ gridTemplateColumns: 'repeat(3, minmax(160px, 1fr))', marginBottom: 20 }}>
+        <div className="kpi-card"><div className="label">Capital</div><div className="value" style={{ fontSize: 20 }}>{money(totales.capital)}</div></div>
+        <div className="kpi-card"><div className="label">Total a Pagar</div><div className="value" style={{ fontSize: 20 }}>{money(totales.totalPagar)}</div></div>
+        <div className="kpi-card"><div className="label">Saldo</div><div className="value" style={{ fontSize: 20 }}>{money(totales.saldo)}</div></div>
       </div>
 
       <table className="table-cards">
