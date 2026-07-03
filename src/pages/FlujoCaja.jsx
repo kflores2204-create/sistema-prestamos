@@ -78,6 +78,10 @@ export default function FlujoCaja() {
           <div className="label">Capital Prestado (nuevo)</div>
           <div className="value">{money(cuenta.capital_prestado_nuevo)}</div>
         </div>
+        <div className="kpi-card" style={{ borderColor: 'var(--red)' }}>
+          <div className="label">Capital Pendiente (afuera hoy)</div>
+          <div className="value" style={{ color: 'var(--red)' }}>{money(capitalPendiente)}</div>
+        </div>
         <div className="kpi-card">
           <div className="label">Gastos / Retiros</div>
           <div className="value">{money(cuenta.total_movimientos < 0 ? -cuenta.total_movimientos : 0)}</div>
