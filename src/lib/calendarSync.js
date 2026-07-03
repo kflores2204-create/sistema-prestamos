@@ -84,10 +84,13 @@ async function buscarEventosDeCuota(calendarId, token, cuotaId) {
 }
 
 /**
- * Limpieza unica: borra los duplicados que hayan quedado de sincronizaciones anteriores
- * (antes de que cada evento tuviera su etiqueta interna de identificacion). Agrupa los
- * eventos por fecha + texto exacto, y si hay mas de uno igual, deja solo uno.
- * Se puede correr las veces que haga falta sin riesgo: si no hay duplicados, no borra nada.
+ * Limpieza unica: borra los eventos que hayan quedado de sincronizaciones anteriores al
+ * arreglo (antes de que cada evento llevara su etiqueta interna de identificacion). No
+ * comparamos texto porque si el nombre del cliente cambio despues, el texto viejo ya no
+ * coincide con nada y quedaria huerfano para siempre. En cambio: de ahora en mas, todo
+ * evento legitimo SIEMPRE va a tener la etiqueta interna (cuota_id). Cualquier evento sin
+ * esa etiqueta es, por definicion, basura de antes del arreglo, y se borra directamente.
+ * Se puede correr las veces que haga falta sin riesgo: si no hay basura vieja, no borra nada.
  */
 export async function limpiarDuplicados() {
   const token = await getAccessToken()
@@ -112,25 +115,11 @@ export async function limpiarDuplicados() {
     pageToken = res.nextPageToken || null
   } while (pageToken)
 
-  // agrupamos por fecha + resumen exacto (asi es como se ven los duplicados viejos)
-  const grupos = new Map()
-  for (const ev of eventos) {
-    const clave = `${ev.start?.date || ev.start?.dateTime}|${ev.summary}`
-    if (!grupos.has(clave)) grupos.set(clave, [])
-    grupos.get(clave).push(ev)
-  }
-
   let borrados = 0
-  for (const grupo of grupos.values()) {
-    if (grupo.length <= 1) continue
-    // dejamos el que ya tenga la etiqueta nueva (si hay uno), o si no, el primero
-    const conEtiqueta = grupo.find((ev) => ev.extendedProperties?.private?.cuota_id)
-    const aConservar = conEtiqueta || grupo[0]
-    for (const ev of grupo) {
-      if (ev.id === aConservar.id) continue
-      await gcal(`calendars/${calendarId}/events/${ev.id}`, token, { method: 'DELETE' }).catch(() => {})
-      borrados++
-    }
+  for (const ev of eventos) {
+    if (ev.extendedProperties?.private?.cuota_id) continue // evento legitimo, se deja
+    await gcal(`calendars/${calendarId}/events/${ev.id}`, token, { method: 'DELETE' }).catch(() => {})
+    borrados++
   }
   return borrados
 }
