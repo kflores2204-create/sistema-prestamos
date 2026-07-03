@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { formatFecha } from '../lib/prestamoUtils'
-import { History, Pencil, Merge, Check, X as XIcon } from 'lucide-react'
+import { History, Pencil, Merge, Check, X as XIcon, UserPlus } from 'lucide-react'
 
 const money = (n) => `S/. ${Number(n || 0).toLocaleString('es-PE', { minimumFractionDigits: 2 })}`
 const fechaCorta = formatFecha
@@ -18,6 +18,11 @@ export default function Clientes() {
   const [fusionQuery, setFusionQuery] = useState('')
   const [fusionTarget, setFusionTarget] = useState(null)
   const [fusionando2, setFusionando2] = useState(false)
+
+  const [creando, setCreando] = useState(false)
+  const [nuevoForm, setNuevoForm] = useState({ dni: '', nombre: '' })
+  const [creandoGuardando, setCreandoGuardando] = useState(false)
+  const [creandoError, setCreandoError] = useState('')
 
   async function cargar() {
     const { data: cl } = await supabase.from('clientes').select('id, dni, nombre').order('nombre')
@@ -48,6 +53,30 @@ export default function Clientes() {
     setEditId(null)
     cargar()
     if (historial?.cliente.id === id) verHistorial({ id, dni: editForm.dni, nombre: editForm.nombre })
+  }
+
+  function abrirNuevoCliente() {
+    setNuevoForm({ dni: '', nombre: '' })
+    setCreandoError('')
+    setCreando(true)
+  }
+
+  async function crearCliente(e) {
+    e.preventDefault()
+    const nombre = nuevoForm.nombre.trim()
+    if (!nombre) { setCreandoError('El nombre es obligatorio.'); return }
+    setCreandoGuardando(true)
+    setCreandoError('')
+    const { error } = await supabase.from('clientes').insert({ dni: nuevoForm.dni.trim() || null, nombre })
+    setCreandoGuardando(false)
+    if (error) {
+      setCreandoError(
+        error.code === '23505' ? 'Ya existe un cliente con ese DNI.' : ('Error al guardar: ' + error.message)
+      )
+      return
+    }
+    setCreando(false)
+    cargar()
   }
 
   function empezarFusion(c) {
@@ -92,11 +121,16 @@ export default function Clientes() {
       <p style={{ color: 'var(--muted)', marginTop: -8 }}>
         Base de datos de clientes: corrige nombres, agrega DNI, y revisa el historico de cada uno.
       </p>
-      <input
-        className="input search-box" style={{ marginBottom: 16 }}
-        placeholder="Buscar por nombre, DNI o codigo de prestamo..." value={busqueda}
-        onChange={(e) => setBusqueda(e.target.value)}
-      />
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginBottom: 16 }}>
+        <input
+          className="input search-box"
+          placeholder="Buscar por nombre, DNI o codigo de prestamo..." value={busqueda}
+          onChange={(e) => setBusqueda(e.target.value)}
+        />
+        <button className="btn" onClick={abrirNuevoCliente}>
+          <UserPlus size={15} strokeWidth={2.4} /> Nuevo cliente
+        </button>
+      </div>
 
       <table className="table-cards">
         <thead><tr><th style={{ width: 120 }}>DNI</th><th>Nombre</th><th style={{ width: 200 }}></th></tr></thead>
@@ -140,6 +174,37 @@ export default function Clientes() {
           )}
         </tbody>
       </table>
+
+      {creando && (
+        <>
+          <div className="drawer-backdrop" onClick={() => setCreando(false)} />
+          <div className="drawer">
+            <div className="drawer-header">
+              <div>
+                <h3 style={{ margin: 0, color: 'var(--navy)' }}>Nuevo cliente</h3>
+                <p style={{ margin: '2px 0 0', color: 'var(--muted)', fontSize: 13 }}>Agregar un cliente a la base de datos</p>
+              </div>
+              <button className="drawer-close" onClick={() => setCreando(false)}>✕</button>
+            </div>
+
+            <form onSubmit={crearCliente} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <label>DNI (opcional)
+                <input className="input" value={nuevoForm.dni} onChange={(e) => setNuevoForm((f) => ({ ...f, dni: e.target.value }))} maxLength={8} />
+              </label>
+              <label>Nombres y Apellidos
+                <input className="input" required value={nuevoForm.nombre} onChange={(e) => setNuevoForm((f) => ({ ...f, nombre: e.target.value }))} />
+              </label>
+              {creandoError && <p style={{ color: 'var(--red)', fontSize: 13, margin: 0 }}>{creandoError}</p>}
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button className="btn" type="submit" disabled={creandoGuardando}>
+                  {creandoGuardando ? 'Guardando...' : 'Crear cliente'}
+                </button>
+                <button className="btn secondary" type="button" onClick={() => setCreando(false)}>Cancelar</button>
+              </div>
+            </form>
+          </div>
+        </>
+      )}
 
       {fusionando && (
         <>
