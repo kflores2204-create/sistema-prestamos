@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import { useParams } from 'react-router-dom'
-import { Pencil, Trash2 } from 'lucide-react'
+import { useParams, Link } from 'react-router-dom'
+import { Pencil, Trash2, FileText } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { syncCuota } from '../lib/calendarSync'
 import { FRECUENCIAS, fechaCuota, montoConRecargo, tieneRecargoAplicado, estaAtrasada, formatFecha, hoyISO } from '../lib/prestamoUtils'
@@ -234,6 +234,9 @@ export default function Prestamos() {
                   <button className="btn" style={{ background: 'var(--red-bg)', color: 'var(--red)' }} onClick={eliminarPrestamo}>
                     <Trash2 size={15} strokeWidth={2.4} /> Eliminar
                   </button>
+                  <Link className="btn secondary" to={`/cronograma?id=${expanded.id}`}>
+                    <FileText size={15} strokeWidth={2.4} /> Cronograma
+                  </Link>
                 </div>
 
                 <table className="table-cards">
