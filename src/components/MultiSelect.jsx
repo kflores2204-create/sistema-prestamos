@@ -1,16 +1,22 @@
 import { useEffect, useRef, useState } from 'react'
 
 /**
- * Filtro multi-select con chips removibles.
- * - Muestra los seleccionados como chips con "x" dentro de una caja tipo input.
- * - Al hacer click en la caja se despliega una lista con checkboxes.
- * - Click afuera cierra el dropdown.
+ * Filtro multi-select con caja cerrada de UNA sola linea y altura fija
+ * (igual a un <select> nativo / un .input), para que nunca se deforme ni
+ * quede mas grande/chico que los campos vecinos, sin importar cuantas
+ * opciones tenga seleccionadas. El detalle (chips, checkboxes) vive
+ * unicamente dentro del desplegable, no en la caja cerrada.
+ *
+ * Semantica: "selected" vacio = sin filtro (equivalente a "todas/todos"),
+ * es responsabilidad del componente padre interpretarlo asi al filtrar.
+ * Empezar vacio y dejar que el usuario elija activamente es el
+ * comportamiento esperado en todo el sistema.
  *
  * Props:
  *  options: string[]           -> todas las opciones posibles
- *  selected: Set<string>       -> opciones actualmente seleccionadas
+ *  selected: Set<string>       -> opciones actualmente seleccionadas (vacio = todas)
  *  onChange: (Set<string>) => void
- *  placeholder: string
+ *  placeholder: string         -> texto cuando no hay nada seleccionado (ej. "Todas las cuentas")
  *  labelFor: (opcion) => string  -> texto a mostrar (opcional, por defecto la opcion misma)
  */
 export default function MultiSelect({ options, selected, onChange, placeholder = 'Seleccionar...', labelFor }) {
@@ -36,28 +42,21 @@ export default function MultiSelect({ options, selected, onChange, placeholder =
     onChange(next)
   }
 
-  function removeChip(opt, e) {
-    e.stopPropagation()
-    const next = new Set(selected)
-    next.delete(opt)
-    onChange(next)
-  }
-
   function clearAll(e) {
     e.stopPropagation()
     onChange(new Set())
   }
 
+  const resumen = selected.size === 0
+    ? placeholder
+    : selected.size === 1
+      ? label([...selected][0])
+      : `${selected.size} seleccionadas`
+
   return (
     <div className="multiselect" ref={ref}>
       <div className="multiselect-box" onClick={() => setOpen((o) => !o)}>
-        {selected.size === 0 && <span className="multiselect-placeholder">{placeholder}</span>}
-        {options.filter((opt) => selected.has(opt)).map((opt) => (
-          <span key={opt} className="multiselect-chip">
-            {label(opt)}
-            <button type="button" onClick={(e) => removeChip(opt, e)} aria-label={`Quitar ${label(opt)}`}>×</button>
-          </span>
-        ))}
+        <span className={selected.size === 0 ? 'multiselect-placeholder' : 'multiselect-summary'}>{resumen}</span>
         <span className="multiselect-actions">
           {selected.size > 0 && (
             <button type="button" className="multiselect-clear" onClick={clearAll} aria-label="Limpiar todo">×</button>
