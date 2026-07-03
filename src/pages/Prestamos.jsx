@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom'
 import { Pencil, Trash2 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { syncCuota } from '../lib/calendarSync'
-import { FRECUENCIAS, fechaCuota, montoConRecargo, tieneRecargoAplicado, estaAtrasada, formatFecha } from '../lib/prestamoUtils'
+import { FRECUENCIAS, fechaCuota, montoConRecargo, tieneRecargoAplicado, estaAtrasada, formatFecha, hoyISO } from '../lib/prestamoUtils'
 import MultiSelect from '../components/MultiSelect'
 import EstadoSelect from '../components/EstadoSelect'
 
@@ -39,7 +39,9 @@ export default function Prestamos() {
 
   async function cambiarEstadoCuota(cuota, nuevoEstado, prestamo) {
     const { data: updated } = await supabase
-      .from('cuotas').update({ estado: nuevoEstado }).eq('id', cuota.id).select().single()
+      .from('cuotas')
+      .update({ estado: nuevoEstado, fecha_pago: nuevoEstado === 'Pagado' ? hoyISO() : null })
+      .eq('id', cuota.id).select().single()
     try {
       await syncCuota(updated, {
         codigo: prestamo.codigo, num_cuotas: prestamo.num_cuotas,
