@@ -5,6 +5,14 @@ import { montoConRecargo, estaAtrasada, hoyISO, formatFecha } from '../lib/prest
 
 const money = (n) => `S/. ${Number(n || 0).toLocaleString('es-PE', { minimumFractionDigits: 2 })}`
 
+// Desglose capital/interes de una cuota individual, util para saber cuanto
+// transferir a cada cuenta destino en el banco al momento de repartir el cobro.
+function desglose(prestamo) {
+  const capital = Number(prestamo.capital) / Number(prestamo.num_cuotas)
+  const interes = Number(prestamo.interes_generado || 0) / Number(prestamo.num_cuotas)
+  return { capital, interes }
+}
+
 export default function Cobros() {
   const [fecha, setFecha] = useState(hoyISO())
   const [incluirAtrasados, setIncluirAtrasados] = useState(true)
@@ -18,7 +26,7 @@ export default function Cobros() {
       .select(`
         id, numero_cuota, fecha_vencimiento, monto, estado,
         prestamos (
-          id, codigo, num_cuotas, recargo_pct,
+          id, codigo, num_cuotas, recargo_pct, capital, interes_generado,
           cuenta:cuentas(nombre),
           cliente:clientes!prestamos_cliente_id_fkey(nombre, dni)
         )
@@ -82,29 +90,34 @@ export default function Cobros() {
 
       <table className="table-cards">
         <thead>
-          <tr><th>Cliente</th><th>DNI</th><th>Cuenta</th><th>Codigo</th><th>Fecha</th><th>Monto</th><th></th></tr>
+          <tr><th>Cliente</th><th>DNI</th><th>Cuenta</th><th>Codigo</th><th>Fecha</th><th>Capital</th><th>Interes</th><th>Monto</th><th></th></tr>
         </thead>
         <tbody>
-          {cuotas.map((c) => (
-            <tr key={c.id}>
-              <td data-label="Cliente">{c.prestamos.cliente?.nombre || '—'}</td>
-              <td data-label="DNI">{c.prestamos.cliente?.dni || '—'}</td>
-              <td data-label="Cuenta">{c.prestamos.cuenta?.nombre || '—'}</td>
-              <td data-label="Codigo">{c.prestamos.codigo}</td>
-              <td data-label="Fecha">
-                {formatFecha(c.fecha_vencimiento)}
-                {estaAtrasada(c) && <span className="badge atrasado" style={{ marginLeft: 6 }}>Atrasado</span>}
-              </td>
-              <td data-label="Monto">{money(montoConRecargo(c, c.prestamos.recargo_pct))}</td>
-              <td data-label="">
-                <button className="btn" style={{ padding: '6px 14px', fontSize: 13 }} onClick={() => marcarPagado(c)}>
-                  Marcar Pagado
-                </button>
-              </td>
-            </tr>
-          ))}
+          {cuotas.map((c) => {
+            const { capital, interes } = desglose(c.prestamos)
+            return (
+              <tr key={c.id}>
+                <td data-label="Cliente">{c.prestamos.cliente?.nombre || '—'}</td>
+                <td data-label="DNI">{c.prestamos.cliente?.dni || '—'}</td>
+                <td data-label="Cuenta">{c.prestamos.cuenta?.nombre || '—'}</td>
+                <td data-label="Codigo">{c.prestamos.codigo}</td>
+                <td data-label="Fecha">
+                  {formatFecha(c.fecha_vencimiento)}
+                  {estaAtrasada(c) && <span className="badge atrasado" style={{ marginLeft: 6 }}>Atrasado</span>}
+                </td>
+                <td data-label="Capital">{money(capital)}</td>
+                <td data-label="Interes">{money(interes)}</td>
+                <td data-label="Monto"><b>{money(montoConRecargo(c, c.prestamos.recargo_pct))}</b></td>
+                <td data-label="">
+                  <button className="btn" style={{ padding: '6px 14px', fontSize: 13 }} onClick={() => marcarPagado(c)}>
+                    Marcar Pagado
+                  </button>
+                </td>
+              </tr>
+            )
+          })}
           {!cargando && cuotas.length === 0 && (
-            <tr><td colSpan={7} style={{ textAlign: 'center', color: 'var(--muted)' }}>Nadie debe pagar en este rango.</td></tr>
+            <tr><td data-label="" colSpan={9} style={{ textAlign: 'center', color: 'var(--muted)' }}>Nadie debe pagar en este rango.</td></tr>
           )}
         </tbody>
       </table>
