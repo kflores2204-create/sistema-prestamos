@@ -10,6 +10,7 @@ export default function FlujoCaja() {
   const { cuenta: cuentaNombre } = useParams()
   const [cuenta, setCuenta] = useState(null)
   const [movimientos, setMovimientos] = useState([])
+  const [capitalPendiente, setCapitalPendiente] = useState(0)
   const [nuevo, setNuevo] = useState({ fecha: hoyISO(), monto: '', detalle: '' })
   const [guardando, setGuardando] = useState(false)
 
@@ -20,6 +21,18 @@ export default function FlujoCaja() {
       const { data: mov } = await supabase
         .from('movimientos_caja').select('*').eq('cuenta_id', c.id).order('fecha', { ascending: false })
       setMovimientos(mov || [])
+
+      // capital que sigue afuera con clientes, en TODOS los prestamos de esta cuenta
+      // (foto en tiempo real, no depende del saldo inicial ni de fechas)
+      const { data: prestamos } = await supabase
+        .from('v_prestamo_resumen')
+        .select('capital, num_cuotas, cuotas_pagadas')
+        .eq('cuenta', cuentaNombre)
+      const pendiente = (prestamos || []).reduce((acc, p) => {
+        const pagado = (p.cuotas_pagadas / p.num_cuotas) * p.capital
+        return acc + (p.capital - pagado)
+      }, 0)
+      setCapitalPendiente(pendiente)
     }
   }
 
@@ -38,9 +51,13 @@ export default function FlujoCaja() {
 
   if (!cuenta) return <p style={{ color: 'var(--muted)' }}>Cargando...</p>
 
+  const gastosHistoricoTotal = movimientos.filter((m) => Number(m.monto) < 0).reduce((acc, m) => acc - Number(m.monto), 0)
+
   return (
     <div>
-      <Link to="/cuentas" className="volver-link"><ChevronLeft size={16} strokeWidth={2.4} /> Cuentas</Link>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 4 }}>
+        <Link to="/cuentas" className="volver-link"><ChevronLeft size={16} strokeWidth={2.4} /> Cuentas</Link>
+      </div>
       <h2 style={{ color: 'var(--navy)', marginTop: 4 }}>Flujo de Caja - {cuenta.nombre}</h2>
       <p style={{ color: 'var(--muted)' }}>Control del dinero disponible en esta cuenta.</p>
 
@@ -69,6 +86,15 @@ export default function FlujoCaja() {
           <div className="label">Saldo Actual</div>
           <div className="value" style={{ color: 'var(--navy)' }}>{money(cuenta.saldo_actual)}</div>
         </div>
+      </div>
+
+      <div className="historico-card">
+        <div className="historico-card-titulo">Detalle historico (informativo)</div>
+        <p style={{ color: 'var(--muted)', fontSize: 13, margin: '2px 0 12px' }}>
+          Vista de todo el historial de esta cuenta, igual a como la llevabas antes. No afecta el Saldo Actual de arriba.
+        </p>
+        <div className="historico-linea"><span>Capital prestado a clientes, aun no recuperado (todos los prestamos)</span><b>- {money(capitalPendiente)}</b></div>
+        <div className="historico-linea"><span>Gastos / Retiros (historico completo)</span><b>- {money(gastosHistoricoTotal)}</b></div>
       </div>
 
       <h3 style={{ color: 'var(--navy)' }}>Agregar gasto / retiro</h3>
