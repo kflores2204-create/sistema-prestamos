@@ -480,28 +480,18 @@ input[type="date"].input::-webkit-calendar-picker-indicator:hover { opacity: 1; 
 .th-ordenable:hover { background: #150a63; }
 
 /* Filtro multi-select con chips (estados, etc.) */
-.multiselect { position: relative; width: 100%; max-width: 460px; }
+.multiselect { position: relative; width: 100%; }
 .multiselect-box {
   position: relative;
-  display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
-  min-height: 42px; padding: 6px 10px; border: 1px solid var(--border); border-radius: 10px;
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  height: 42px; padding: 0 12px; border: 1px solid var(--border); border-radius: 8px;
   background: white; cursor: pointer;
 }
 .multiselect-box:hover { border-color: var(--navy); }
-.multiselect-placeholder { color: var(--muted); font-size: 14px; padding: 4px 2px; }
-.multiselect-chip {
-  display: inline-flex; align-items: center; gap: 6px;
-  background: var(--navy); color: white; border-radius: 999px;
-  padding: 4px 6px 4px 12px; font-size: 13px; font-weight: 600;
-}
-.multiselect-chip button {
-  border: none; background: rgba(255,255,255,0.18); color: white; border-radius: 50%;
-  width: 18px; height: 18px; line-height: 1; cursor: pointer; font-size: 13px;
-  display: flex; align-items: center; justify-content: center; padding: 0;
-}
-.multiselect-chip button:hover { background: rgba(255,255,255,0.32); }
+.multiselect-placeholder { color: #8a8a9a; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.multiselect-summary { color: var(--text); font-size: 14px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .multiselect-actions {
-  display: flex; align-items: center; gap: 6px; flex-shrink: 0; margin-left: auto; padding-left: 6px;
+  display: flex; align-items: center; gap: 6px; flex-shrink: 0;
 }
 .multiselect-clear {
   border: none; background: transparent; color: var(--muted); font-size: 16px;
