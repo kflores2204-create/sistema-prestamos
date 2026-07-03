@@ -245,12 +245,18 @@ export default function Prestamos() {
                 <table className="table-cards">
                   <thead><tr><th>N</th><th>Fecha</th><th>Monto</th><th>Estado</th></tr></thead>
                   <tbody>
-                    {cuotasDetalle.map((c) => (
+                    {cuotasDetalle.map((c) => {
+                      const capitalCuota = Number(expanded.capital) / Number(expanded.num_cuotas)
+                      const interesCuota = Number(expanded.interes_generado || 0) / Number(expanded.num_cuotas)
+                      return (
                       <tr key={c.id}>
                         <td data-label="Cuota N">{c.numero_cuota}</td>
                         <td data-label="Fecha">{fechaCorta(c.fecha_vencimiento)}</td>
                         <td data-label="Monto">
-                          {money(montoConRecargo(c, expanded.recargo_pct))}
+                          <b>{money(montoConRecargo(c, expanded.recargo_pct))}</b>
+                          <div style={{ fontSize: 11, color: 'var(--muted)' }}>
+                            Capital {money(capitalCuota)} + Interes {money(interesCuota)}
+                          </div>
                           {tieneRecargoAplicado(c, expanded.recargo_pct) && (
                             <div style={{ fontSize: 11, color: 'var(--red)' }}>
                               incluye recargo {(Number(expanded.recargo_pct) * 100).toFixed(0)}%
@@ -269,7 +275,8 @@ export default function Prestamos() {
                           </div>
                         </td>
                       </tr>
-                    ))}
+                      )
+                    })}
                   </tbody>
                 </table>
               </>
