@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { montoConRecargo, tieneRecargoAplicado, formatFecha } from '../lib/prestamoUtils'
 import { Printer } from 'lucide-react'
@@ -14,6 +15,7 @@ function referenciaCliente(id) {
 }
 
 export default function Cronograma() {
+  const [searchParams] = useSearchParams()
   const [opciones, setOpciones] = useState([])
   const [query, setQuery] = useState('')
   const [abierto, setAbierto] = useState(false)
@@ -27,6 +29,16 @@ export default function Cronograma() {
       .order('fecha_prestamo', { ascending: false })
       .then(({ data }) => setOpciones(data || []))
   }, [])
+
+  // si venimos con ?id=... (ej. justo despues de crear un prestamo nuevo), lo
+  // seleccionamos solo, sin que el usuario tenga que volver a buscarlo
+  useEffect(() => {
+    const id = searchParams.get('id')
+    if (!id) return
+    supabase.from('v_prestamo_resumen').select('*').eq('id', id).single().then(({ data }) => {
+      if (data) { setPrestamo(data); setQuery(data.cliente) }
+    })
+  }, [searchParams])
 
   useEffect(() => {
     if (!prestamo) { setCuotas([]); return }
