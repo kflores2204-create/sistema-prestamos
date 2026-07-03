@@ -368,6 +368,14 @@ input[type="date"].input::-webkit-calendar-picker-indicator:hover { opacity: 1; 
   color: var(--muted); font-size: 12px; text-align: center;
 }
 
+@media (max-width: 640px) {
+  .cronograma-print { padding: 20px 16px; }
+  .cronograma-header { flex-wrap: wrap; gap: 14px; }
+  .cronograma-header-box { text-align: left; min-width: 0; flex: 1 1 100%; }
+  .cronograma-logo { height: 56px; }
+  .cronograma-ficha { padding: 4px 14px; }
+}
+
 @media print {
   .no-print, .sidebar { display: none !important; }
   .main { padding: 0; max-width: none; }
@@ -476,7 +484,7 @@ input[type="date"].input::-webkit-calendar-picker-indicator:hover { opacity: 1; 
 .multiselect-box {
   position: relative;
   display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
-  min-height: 42px; padding: 6px 34px 6px 10px; border: 1px solid var(--border); border-radius: 10px;
+  min-height: 42px; padding: 6px 10px; border: 1px solid var(--border); border-radius: 10px;
   background: white; cursor: pointer;
 }
 .multiselect-box:hover { border-color: var(--navy); }
@@ -493,7 +501,7 @@ input[type="date"].input::-webkit-calendar-picker-indicator:hover { opacity: 1; 
 }
 .multiselect-chip button:hover { background: rgba(255,255,255,0.32); }
 .multiselect-actions {
-  position: absolute; top: 9px; right: 10px; display: flex; align-items: center; gap: 6px;
+  display: flex; align-items: center; gap: 6px; flex-shrink: 0; margin-left: auto; padding-left: 6px;
 }
 .multiselect-clear {
   border: none; background: transparent; color: var(--muted); font-size: 16px;
