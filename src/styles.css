@@ -313,6 +313,7 @@ tbody tr:hover { background: #fafafe; }
 .privacidad-card a { color: var(--navy); font-weight: 600; }
 
 label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; font-weight: 600; color: var(--navy); }
+.field-label { display: block; font-size: 13px; font-weight: 600; color: var(--navy); margin-bottom: 4px; }
 .input {
   padding: 9px 12px; border: 1px solid var(--border); border-radius: 8px;
   font-size: 14px; font-family: inherit; background: white; color: var(--text);
@@ -483,15 +484,26 @@ input[type="date"].input::-webkit-calendar-picker-indicator:hover { opacity: 1; 
 .multiselect { position: relative; width: 100%; }
 .multiselect-box {
   position: relative;
-  display: flex; align-items: center; justify-content: space-between; gap: 8px;
-  height: 42px; padding: 0 12px; border: 1px solid var(--border); border-radius: 8px;
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 8px;
+  min-height: 42px; padding: 9px 12px; border: 1px solid var(--border); border-radius: 8px;
   background: white; cursor: pointer;
 }
 .multiselect-box:hover { border-color: var(--navy); }
-.multiselect-placeholder { color: #8a8a9a; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.multiselect-summary { color: var(--text); font-size: 14px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.multiselect-chips { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; flex: 1; min-width: 0; }
+.multiselect-placeholder { color: #8a8a9a; font-size: 14px; line-height: 1.3; }
+.multiselect-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--navy); color: white; border-radius: 999px;
+  padding: 3px 6px 3px 10px; font-size: 12.5px; font-weight: 600; line-height: 1.4;
+}
+.multiselect-chip button {
+  border: none; background: rgba(255,255,255,0.18); color: white; border-radius: 50%;
+  width: 16px; height: 16px; line-height: 1; cursor: pointer; font-size: 12px;
+  display: flex; align-items: center; justify-content: center; padding: 0; flex-shrink: 0;
+}
+.multiselect-chip button:hover { background: rgba(255,255,255,0.32); }
 .multiselect-actions {
-  display: flex; align-items: center; gap: 6px; flex-shrink: 0;
+  display: flex; align-items: center; gap: 6px; flex-shrink: 0; padding-top: 1px;
 }
 .multiselect-clear {
   border: none; background: transparent; color: var(--muted); font-size: 16px;
