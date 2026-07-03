@@ -79,7 +79,10 @@ function Sidebar({ user, sincronizando, handleSync, sidebarOpen, setSidebarOpen 
     <>
       {sidebarOpen && <div className="sidebar-backdrop" onClick={() => setSidebarOpen(false)} />}
       <aside className={`sidebar no-print ${sidebarOpen ? 'sidebar-open' : ''}`}>
-        <h1>Sistema de Prestamos</h1>
+        <h1 className="sidebar-brand">
+          <img src="/icon-mark.png" alt="" className="sidebar-brand-icon" />
+          Sistema de Prestamos
+        </h1>
         <nav>
           {MODULOS.map(({ to, end, label, icon: Icon }) => (
             <NavLink key={to} to={to} end={end} className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
