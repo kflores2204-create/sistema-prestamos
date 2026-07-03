@@ -1,9 +1,7 @@
 import { useEffect, useState } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { FRECUENCIAS, fechaCuota, hoyISO } from '../lib/prestamoUtils'
-
-const CUENTAS = ['BBVA', 'Caja Arequipa', 'Intereses']
-const PREFIX = { BBVA: 'BBVA', 'Caja Arequipa': 'CAJA', Intereses: 'INT' }
 
 function BuscadorPersona({ label, dni, nombre, onChangeDni, onChangeNombre, personas, required }) {
   const [query, setQuery] = useState('')
@@ -57,7 +55,12 @@ function BuscadorPersona({ label, dni, nombre, onChangeDni, onChangeNombre, pers
 }
 
 export default function NuevoPrestamo() {
-  const [cuenta, setCuenta] = useState('BBVA')
+  const [searchParams] = useSearchParams()
+  const navigate = useNavigate()
+  const cuentaPreseleccionada = searchParams.get('cuenta')
+
+  const [cuentasDisponibles, setCuentasDisponibles] = useState([])
+  const [cuenta, setCuenta] = useState(cuentaPreseleccionada || '')
   const [fecha, setFecha] = useState(hoyISO())
   const [capital, setCapital] = useState('')
   const [tasa, setTasa] = useState('0.2')
@@ -78,13 +81,17 @@ export default function NuevoPrestamo() {
 
   useEffect(() => {
     supabase.from('clientes').select('id, dni, nombre').order('nombre').then(({ data }) => setPersonas(data || []))
+    supabase.from('cuentas').select('id, nombre, prefijo').order('nombre').then(({ data }) => {
+      setCuentasDisponibles(data || [])
+      if (!cuentaPreseleccionada && data?.length) setCuenta(data[0].nombre)
+    })
   }, [])
 
-  async function siguienteCodigo(cuentaNombre, cuentaId) {
+  async function siguienteCodigo(cuentaId, prefijo) {
     const { count } = await supabase
       .from('prestamos').select('id', { count: 'exact', head: true }).eq('cuenta_id', cuentaId)
     const n = (count || 0) + 1
-    return `PR-${PREFIX[cuentaNombre]}-${String(n).padStart(4, '0')}`
+    return `PR-${prefijo}-${String(n).padStart(4, '0')}`
   }
 
   async function resolverPersona(dni, nombre) {
@@ -106,7 +113,8 @@ export default function NuevoPrestamo() {
     e.preventDefault()
     setEstado({ cargando: true, mensaje: '', error: false })
     try {
-      const { data: cuentaRow } = await supabase.from('cuentas').select('id').eq('nombre', cuenta).single()
+      const cuentaRow = cuentasDisponibles.find((c) => c.nombre === cuenta)
+      if (!cuentaRow) throw new Error('Selecciona una cuenta valida.')
 
       const clienteId = await resolverPersona(clienteDni, clienteNombre)
       let avalId = null
@@ -114,7 +122,7 @@ export default function NuevoPrestamo() {
         avalId = await resolverPersona(avalDni, avalNombre)
       }
 
-      const codigo = await siguienteCodigo(cuenta, cuentaRow.id)
+      const codigo = await siguienteCodigo(cuentaRow.id, cuentaRow.prefijo || cuenta.slice(0, 4).toUpperCase())
 
       const { data: prestamo, error: errPrestamo } = await supabase
         .from('prestamos')
@@ -139,10 +147,9 @@ export default function NuevoPrestamo() {
       const { error: errCuotas } = await supabase.from('cuotas').insert(nuevasCuotas)
       if (errCuotas) throw errCuotas
 
-      setEstado({ cargando: false, mensaje: `Prestamo ${codigo} creado correctamente.`, error: false })
-      setClienteDni(''); setClienteNombre(''); setCapital('')
-      setTieneAval(false); setAvalDni(''); setAvalNombre('')
-      setFecha(hoyISO()); setFrecuencia('semanal'); setTieneRecargo(false); setRecargoPct('5')
+      // listo: vamos directo al cronograma de este prestamo recien creado,
+      // no hace falta que el usuario lo busque de nuevo
+      navigate(`/cronograma?id=${prestamo.id}`)
     } catch (err) {
       setEstado({ cargando: false, mensaje: err.message, error: true })
     }
@@ -155,7 +162,7 @@ export default function NuevoPrestamo() {
         <label>
           Cuenta
           <select value={cuenta} onChange={(e) => setCuenta(e.target.value)} className="input">
-            {CUENTAS.map((c) => <option key={c} value={c}>{c}</option>)}
+            {cuentasDisponibles.map((c) => <option key={c.id} value={c.nombre}>{c.nombre}</option>)}
           </select>
         </label>
 
