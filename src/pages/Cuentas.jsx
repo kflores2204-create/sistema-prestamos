@@ -19,6 +19,7 @@ function FormCuenta({ inicial, onGuardar, onCancelar, cuentas, guardando }) {
   const [saldoInicial, setSaldoInicial] = useState(inicial?.saldo_inicial ?? '')
   const [fechaSaldo, setFechaSaldo] = useState(inicial?.fecha_saldo_inicial || hoyISO())
   const [destinoInteres, setDestinoInteres] = useState(inicial?.cuenta_destino_interes_id || '')
+  const [montoOriginal, setMontoOriginal] = useState(inicial?.monto_prestamo_original ?? '')
 
   function submit(e) {
     e.preventDefault()
@@ -27,6 +28,7 @@ function FormCuenta({ inicial, onGuardar, onCancelar, cuentas, guardando }) {
       saldo_inicial: Number(saldoInicial) || 0,
       fecha_saldo_inicial: fechaSaldo,
       cuenta_destino_interes_id: destinoInteres || null,
+      monto_prestamo_original: montoOriginal === '' ? null : Number(montoOriginal),
     })
   }
 
@@ -59,6 +61,11 @@ function FormCuenta({ inicial, onGuardar, onCancelar, cuentas, guardando }) {
           ))}
         </select>
       </label>
+      {tipo === 'prestamo_solicitado' && (
+        <label>Monto del prestamo original recibido (para el detalle historico)
+          <input className="input" type="number" step="0.01" value={montoOriginal} onChange={(e) => setMontoOriginal(e.target.value)} placeholder="Ej: 14608.96" />
+        </label>
+      )}
       <div style={{ display: 'flex', gap: 8 }}>
         <button className="btn" type="submit" disabled={guardando}>{guardando ? 'Guardando...' : 'Guardar'}</button>
         <button className="btn secondary" type="button" onClick={onCancelar}>Cancelar</button>
