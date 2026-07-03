@@ -155,8 +155,8 @@ export default function Prestamos() {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 4 }}>
-        <Link to="/cuentas" className="volver-link"><ChevronLeft size={16} strokeWidth={2.4} /> Cuentas</Link>
+      <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: 4 }}>
+        <Link to="/cuentas" className="volver-link"><ChevronLeft size={18} strokeWidth={2.6} /> Cuentas</Link>
       </div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, flexWrap: 'wrap', gap: 12 }}>
         <h2 style={{ color: 'var(--navy)', margin: 0 }}>Prestamos {cuenta}</h2>
