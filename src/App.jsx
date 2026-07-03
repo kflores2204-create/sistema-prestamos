@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { BrowserRouter, Routes, Route, NavLink, Navigate, useLocation } from 'react-router-dom'
 import {
-  LayoutDashboard, Wallet, Landmark, PlusCircle, Users,
+  LayoutDashboard, Wallet, Landmark, Users,
   CalendarDays, RefreshCw, LogOut, UserCog,
 } from 'lucide-react'
 import { supabase, signOut } from './lib/supabase'
@@ -23,7 +23,6 @@ const MODULOS = [
   { to: '/', end: true, label: 'Dashboard', icon: LayoutDashboard },
   { to: '/cobros', label: 'Cobros del Dia', icon: Wallet },
   { to: '/cuentas', label: 'Cuentas', icon: Landmark },
-  { to: '/nuevo', label: 'Nuevo Prestamo', icon: PlusCircle },
   { to: '/clientes', label: 'Clientes', icon: Users },
   { to: '/cronograma', label: 'Cronograma Cliente', icon: CalendarDays },
   { to: '/equipo', label: 'Equipo', icon: UserCog },
