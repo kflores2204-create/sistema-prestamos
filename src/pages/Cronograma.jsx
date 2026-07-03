@@ -74,7 +74,7 @@ export default function Cronograma() {
           <button className="volver-link" style={{ background: 'none', border: 'none', cursor: 'pointer' }} onClick={() => setPrestamo(null)}>
             <ChevronLeft size={16} strokeWidth={2.4} /> Todos los cronogramas
           </button>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginBottom: 16 }}>
             <h2 style={{ color: 'var(--navy)', margin: 0 }}>Cronograma de Pagos</h2>
             <button className="btn" onClick={() => window.print()}>
               <Printer size={16} strokeWidth={2.4} /> Descargar / Imprimir PDF
