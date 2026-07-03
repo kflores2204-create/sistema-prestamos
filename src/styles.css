@@ -52,10 +52,10 @@ body {
 .spin { animation: spin 0.9s linear infinite; }
 
 .volver-link {
-  display: inline-flex; align-items: center; gap: 4px; color: var(--muted); font-size: 13px;
-  text-decoration: none; margin-bottom: 8px;
+  display: inline-flex; align-items: center; gap: 4px; color: var(--navy); font-size: 15px;
+  font-weight: 700; font-style: italic; text-decoration: none; margin-bottom: 8px;
 }
-.volver-link:hover { color: var(--navy); }
+.volver-link:hover { color: var(--pink); }
 
 .historico-card {
   background: var(--bg); border: 1px dashed var(--border); border-radius: 12px;
@@ -68,6 +68,9 @@ body {
 }
 .historico-linea:last-child { border-bottom: none; }
 .historico-linea b { color: var(--red); font-weight: 700; }
+.historico-total { border-top: 2px solid var(--navy); margin-top: 4px; padding-top: 12px; }
+.historico-total span { font-weight: 700; color: var(--navy); }
+.historico-total b { color: var(--navy) !important; font-size: 16px; }
 
 /* Pantalla de Cuentas */
 .cuentas-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
