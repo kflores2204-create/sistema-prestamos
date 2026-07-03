@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { Pencil, Trash2, FileText } from 'lucide-react'
+import { Pencil, Trash2, FileText, ChevronLeft } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { syncCuota } from '../lib/calendarSync'
 import { FRECUENCIAS, fechaCuota, montoConRecargo, tieneRecargoAplicado, estaAtrasada, formatFecha, hoyISO } from '../lib/prestamoUtils'
@@ -155,6 +155,9 @@ export default function Prestamos() {
 
   return (
     <div>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 4 }}>
+        <Link to="/cuentas" className="volver-link"><ChevronLeft size={16} strokeWidth={2.4} /> Cuentas</Link>
+      </div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, flexWrap: 'wrap', gap: 12 }}>
         <h2 style={{ color: 'var(--navy)', margin: 0 }}>Prestamos {cuenta}</h2>
         <input
