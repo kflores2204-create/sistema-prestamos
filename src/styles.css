@@ -57,6 +57,18 @@ body {
 }
 .volver-link:hover { color: var(--navy); }
 
+.historico-card {
+  background: var(--bg); border: 1px dashed var(--border); border-radius: 12px;
+  padding: 16px 20px; margin-bottom: 24px;
+}
+.historico-card-titulo { color: var(--navy); font-weight: 700; font-size: 13px; letter-spacing: 0.02em; text-transform: uppercase; }
+.historico-linea {
+  display: flex; justify-content: space-between; gap: 12px; padding: 8px 0;
+  border-bottom: 1px solid var(--border); font-size: 14px;
+}
+.historico-linea:last-child { border-bottom: none; }
+.historico-linea b { color: var(--red); font-weight: 700; }
+
 /* Pantalla de Cuentas */
 .cuentas-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
 .cuenta-card { background: white; border: 1px solid var(--border); border-radius: 14px; padding: 18px; }
@@ -391,6 +403,12 @@ input[type="date"].input::-webkit-calendar-picker-indicator:hover { opacity: 1; 
 .autocomplete-item:last-child { border-bottom: none; }
 .autocomplete-item:hover { background: var(--bg); }
 .autocomplete-dni { font-size: 12px; color: var(--muted); font-weight: 600; flex-shrink: 0; }
+.autocomplete-crear {
+  padding: 10px 14px; cursor: pointer; display: flex; align-items: center; gap: 8px;
+  border-bottom: 1px solid var(--border); font-size: 13px; font-weight: 600; color: var(--navy);
+  background: var(--bg);
+}
+.autocomplete-crear:hover { background: #edecf7; }
 
 /* Panel deslizante (drawer) para el detalle de un prestamo */
 .drawer-backdrop {
