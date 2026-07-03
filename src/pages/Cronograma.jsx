@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { montoConRecargo, tieneRecargoAplicado, formatFecha } from '../lib/prestamoUtils'
-import { Printer } from 'lucide-react'
+import { Printer, ChevronLeft } from 'lucide-react'
 
 const money = (n) => `S/. ${Number(n || 0).toLocaleString('es-PE', { minimumFractionDigits: 2 })}`
 const fecha = formatFecha
@@ -18,7 +18,6 @@ export default function Cronograma() {
   const [searchParams] = useSearchParams()
   const [opciones, setOpciones] = useState([])
   const [query, setQuery] = useState('')
-  const [abierto, setAbierto] = useState(false)
   const [prestamo, setPrestamo] = useState(null)
   const [cuotas, setCuotas] = useState([])
 
@@ -31,12 +30,12 @@ export default function Cronograma() {
   }, [])
 
   // si venimos con ?id=... (ej. justo despues de crear un prestamo nuevo), lo
-  // seleccionamos solo, sin que el usuario tenga que volver a buscarlo
+  // seleccionamos solo, sin que el usuario tenga que buscarlo en la lista
   useEffect(() => {
     const id = searchParams.get('id')
     if (!id) return
     supabase.from('v_prestamo_resumen').select('*').eq('id', id).single().then(({ data }) => {
-      if (data) { setPrestamo(data); setQuery(data.cliente) }
+      if (data) setPrestamo(data)
     })
   }, [searchParams])
 
@@ -46,55 +45,31 @@ export default function Cronograma() {
       .then(({ data }) => setCuotas(data || []))
   }, [prestamo])
 
-  const sugerencias = query.length >= 1
-    ? opciones.filter((o) => {
-        const texto = `${o.cliente} ${o.codigo} ${o.cliente_dni || ''}`.toLowerCase()
-        return texto.includes(query.toLowerCase())
-      }).slice(0, 8)
-    : []
+  const filtrados = query.length >= 1
+    ? opciones.filter((o) => `${o.cliente} ${o.codigo} ${o.cliente_dni || ''}`.toLowerCase().includes(query.toLowerCase()))
+    : opciones
 
   async function elegir(o) {
-    setQuery(o.cliente)
-    setAbierto(false)
     const { data } = await supabase.from('v_prestamo_resumen').select('*').eq('id', o.id).single()
     setPrestamo(data)
   }
 
-  return (
-    <div>
-      <div className="no-print">
-        <h2 style={{ color: 'var(--navy)' }}>Cronograma de Pagos</h2>
-        <div className="buscador-persona" style={{ maxWidth: 420 }}>
-          <label>Buscar cliente
-            <input
-              className="input" placeholder="Nombre, DNI o codigo del prestamo..."
-              value={query}
-              onChange={(e) => { setQuery(e.target.value); setAbierto(true); if (!e.target.value) setPrestamo(null) }}
-              onFocus={() => setAbierto(true)}
-              onBlur={() => setTimeout(() => setAbierto(false), 150)}
-            />
-          </label>
-          {abierto && sugerencias.length > 0 && (
-            <div className="autocomplete-dropdown">
-              {sugerencias.map((o) => (
-                <div key={o.id} className="autocomplete-item" onMouseDown={() => elegir(o)}>
-                  <span style={{ fontWeight: 600 }}>{o.cliente}</span>
-                  <span style={{ color: 'var(--muted)', fontSize: 12 }}>
-                    Inicio: {fecha(o.fecha_prestamo)} · {o.cuenta} · {o.codigo}
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-        {prestamo && (
-          <button className="btn" style={{ marginTop: 16 }} onClick={() => window.print()}>
-            <Printer size={16} strokeWidth={2.4} /> Descargar / Imprimir PDF
+  // ---------- Vista de detalle (cronograma de un prestamo puntual) ----------
+  if (prestamo) {
+    return (
+      <div>
+        <div className="no-print">
+          <button className="volver-link" style={{ background: 'none', border: 'none', cursor: 'pointer' }} onClick={() => setPrestamo(null)}>
+            <ChevronLeft size={16} strokeWidth={2.4} /> Todos los cronogramas
           </button>
-        )}
-      </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+            <h2 style={{ color: 'var(--navy)', margin: 0 }}>Cronograma de Pagos</h2>
+            <button className="btn" onClick={() => window.print()}>
+              <Printer size={16} strokeWidth={2.4} /> Descargar / Imprimir PDF
+            </button>
+          </div>
+        </div>
 
-      {prestamo && (
         <div className="cronograma-print">
           <div className="cronograma-header">
             <img src="/logo-confianza-horizontal.png" alt="Confianza Prestamos" className="cronograma-logo" />
@@ -146,7 +121,39 @@ export default function Cronograma() {
             Confianza Prestamos · Soluciones que te acercan. Gracias por su confianza.
           </div>
         </div>
-      )}
+      </div>
+    )
+  }
+
+  // ---------- Vista de lista (todos los cronogramas, filtrable) ----------
+  return (
+    <div>
+      <h2 style={{ color: 'var(--navy)' }}>Cronograma de Pagos</h2>
+      <p style={{ color: 'var(--muted)', marginTop: -8 }}>
+        Todos los prestamos. Busca por nombre, DNI o codigo para filtrar, o elegi uno de la lista.
+      </p>
+      <input
+        className="input search-box" style={{ marginBottom: 16 }}
+        placeholder="Buscar por nombre, DNI o codigo..."
+        value={query} onChange={(e) => setQuery(e.target.value)}
+      />
+
+      <table className="table-cards">
+        <thead><tr><th>Cliente</th><th>Codigo</th><th>Cuenta</th><th>Fecha</th></tr></thead>
+        <tbody>
+          {filtrados.map((o) => (
+            <tr key={o.id} onClick={() => elegir(o)} style={{ cursor: 'pointer' }}>
+              <td data-label="Cliente">{o.cliente}</td>
+              <td data-label="Codigo">{o.codigo}</td>
+              <td data-label="Cuenta">{o.cuenta}</td>
+              <td data-label="Fecha">{fecha(o.fecha_prestamo)}</td>
+            </tr>
+          ))}
+          {filtrados.length === 0 && (
+            <tr><td data-label="" colSpan={4} style={{ textAlign: 'center', color: 'var(--muted)' }}>Sin resultados.</td></tr>
+          )}
+        </tbody>
+      </table>
     </div>
   )
 }
