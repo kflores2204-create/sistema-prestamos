@@ -45,8 +45,8 @@ export default function Dashboard() {
 
   const [fechaDesde, setFechaDesde] = useState('')
   const [fechaHasta, setFechaHasta] = useState('')
-  const [cuentasSel, setCuentasSel] = useState(new Set())
-  const [estadosSel, setEstadosSel] = useState(new Set())
+  const [cuentasSel, setCuentasSel] = useState(null)
+  const [estadosSel, setEstadosSel] = useState(new Set(ESTADOS))
   const [clienteQuery, setClienteQuery] = useState('')
 
   useEffect(() => {
@@ -68,18 +68,28 @@ export default function Dashboard() {
     [prestamos]
   )
 
+  // Todas las cuentas empiezan seleccionadas apenas se sabe cuales existen
+  useEffect(() => {
+    if (cuentasDisponibles.length && cuentasSel === null) {
+      setCuentasSel(new Set(cuentasDisponibles))
+    }
+  }, [cuentasDisponibles, cuentasSel])
+
   function limpiarFiltros() {
     setFechaDesde('')
     setFechaHasta('')
-    setCuentasSel(new Set())
-    setEstadosSel(new Set())
+    setCuentasSel(new Set(cuentasDisponibles))
+    setEstadosSel(new Set(ESTADOS))
     setClienteQuery('')
   }
 
+  const listo = cuentasSel !== null
+
   const filtradosPrestamos = useMemo(() => {
+    if (!listo) return []
     return prestamos.filter((p) => {
-      if (cuentasSel.size > 0 && !cuentasSel.has(p.cuenta)) return false
-      if (estadosSel.size > 0 && !estadosSel.has(p.estado)) return false
+      if (!cuentasSel.has(p.cuenta)) return false
+      if (!estadosSel.has(p.estado)) return false
       if (fechaDesde && String(p.fecha_prestamo).slice(0, 10) < fechaDesde) return false
       if (fechaHasta && String(p.fecha_prestamo).slice(0, 10) > fechaHasta) return false
       if (clienteQuery) {
@@ -198,7 +208,7 @@ export default function Dashboard() {
     }))
   }, [filtradasCuotas])
 
-  if (cargando) return <p>Cargando...</p>
+  if (cargando || !listo) return <p>Cargando...</p>
 
   return (
     <div>
@@ -208,22 +218,24 @@ export default function Dashboard() {
       </p>
 
       {/* ---------------- Filtros ---------------- */}
-      <div style={{ ...panelStyle, display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))', gap: 16, alignItems: 'end' }}>
+      <div style={{ ...panelStyle, display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))', gap: 16, alignItems: 'start' }}>
         <label>Desde
           <input className="input" type="date" value={fechaDesde} onChange={(e) => setFechaDesde(e.target.value)} />
         </label>
         <label>Hasta
           <input className="input" type="date" value={fechaHasta} onChange={(e) => setFechaHasta(e.target.value)} />
         </label>
-        <label>Cuenta
+        <div>
+          <span className="field-label">Cuenta</span>
           <MultiSelect
             options={cuentasDisponibles}
             selected={cuentasSel}
             onChange={setCuentasSel}
             placeholder="Todas las cuentas"
           />
-        </label>
-        <label>Estado
+        </div>
+        <div>
+          <span className="field-label">Estado</span>
           <MultiSelect
             options={ESTADOS}
             selected={estadosSel}
@@ -231,11 +243,14 @@ export default function Dashboard() {
             placeholder="Todos los estados"
             labelFor={(e) => e.charAt(0) + e.slice(1).toLowerCase()}
           />
-        </label>
+        </div>
         <label>Cliente (nombre o DNI)
           <input className="input" placeholder="Buscar cliente..." value={clienteQuery} onChange={(e) => setClienteQuery(e.target.value)} />
         </label>
-        <button className="btn secondary" style={{ width: '100%', height: 42 }} onClick={limpiarFiltros}>Limpiar filtros</button>
+        <div>
+          <span className="field-label" style={{ visibility: 'hidden' }}>Limpiar</span>
+          <button className="btn secondary" style={{ width: '100%', height: 42 }} onClick={limpiarFiltros}>Limpiar filtros</button>
+        </div>
       </div>
       <p style={{ color: 'var(--muted)', fontSize: 13, marginTop: -12, marginBottom: 24 }}>
         {filtradosPrestamos.length} de {prestamos.length} prestamos coinciden con los filtros actuales.
