@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
-import { Plus } from 'lucide-react'
+import { useNavigate, useSearchParams, Link } from 'react-router-dom'
+import { Plus, ChevronLeft } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { FRECUENCIAS, fechaCuota, hoyISO } from '../lib/prestamoUtils'
 
@@ -168,6 +168,9 @@ export default function NuevoPrestamo() {
 
   return (
     <div>
+      <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: 4 }}>
+        <Link to="/cuentas" className="volver-link"><ChevronLeft size={18} strokeWidth={2.6} /> Cuentas</Link>
+      </div>
       <h2 style={{ color: 'var(--navy)' }}>Nuevo Prestamo</h2>
       <form onSubmit={handleSubmit} style={{ maxWidth: 460, display: 'flex', flexDirection: 'column', gap: 18 }}>
         <label>
