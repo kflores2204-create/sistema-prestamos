@@ -45,8 +45,8 @@ export default function Dashboard() {
 
   const [fechaDesde, setFechaDesde] = useState('')
   const [fechaHasta, setFechaHasta] = useState('')
-  const [cuentasSel, setCuentasSel] = useState(null)
-  const [estadosSel, setEstadosSel] = useState(null)
+  const [cuentasSel, setCuentasSel] = useState(new Set())
+  const [estadosSel, setEstadosSel] = useState(new Set())
   const [clienteQuery, setClienteQuery] = useState('')
 
   useEffect(() => {
@@ -68,29 +68,18 @@ export default function Dashboard() {
     [prestamos]
   )
 
-  // Selecciona "todo" por defecto la primera vez que llegan los datos
-  useEffect(() => {
-    if (prestamos.length && cuentasSel === null) {
-      setCuentasSel(new Set(cuentasDisponibles))
-      setEstadosSel(new Set(ESTADOS))
-    }
-  }, [prestamos, cuentasDisponibles, cuentasSel])
-
   function limpiarFiltros() {
     setFechaDesde('')
     setFechaHasta('')
-    setCuentasSel(new Set(cuentasDisponibles))
-    setEstadosSel(new Set(ESTADOS))
+    setCuentasSel(new Set())
+    setEstadosSel(new Set())
     setClienteQuery('')
   }
 
-  const listo = cuentasSel !== null && estadosSel !== null
-
   const filtradosPrestamos = useMemo(() => {
-    if (!listo) return []
     return prestamos.filter((p) => {
-      if (!cuentasSel.has(p.cuenta)) return false
-      if (!estadosSel.has(p.estado)) return false
+      if (cuentasSel.size > 0 && !cuentasSel.has(p.cuenta)) return false
+      if (estadosSel.size > 0 && !estadosSel.has(p.estado)) return false
       if (fechaDesde && String(p.fecha_prestamo).slice(0, 10) < fechaDesde) return false
       if (fechaHasta && String(p.fecha_prestamo).slice(0, 10) > fechaHasta) return false
       if (clienteQuery) {
@@ -99,7 +88,7 @@ export default function Dashboard() {
       }
       return true
     })
-  }, [prestamos, cuentasSel, estadosSel, fechaDesde, fechaHasta, clienteQuery, listo])
+  }, [prestamos, cuentasSel, estadosSel, fechaDesde, fechaHasta, clienteQuery])
 
   const idsFiltrados = useMemo(() => new Set(filtradosPrestamos.map((p) => p.id)), [filtradosPrestamos])
   const filtradasCuotas = useMemo(() => cuotas.filter((c) => idsFiltrados.has(c.prestamo_id)), [cuotas, idsFiltrados])
@@ -209,7 +198,7 @@ export default function Dashboard() {
     }))
   }, [filtradasCuotas])
 
-  if (cargando || !listo) return <p>Cargando...</p>
+  if (cargando) return <p>Cargando...</p>
 
   return (
     <div>
@@ -246,7 +235,7 @@ export default function Dashboard() {
         <label>Cliente (nombre o DNI)
           <input className="input" placeholder="Buscar cliente..." value={clienteQuery} onChange={(e) => setClienteQuery(e.target.value)} />
         </label>
-        <button className="btn secondary" style={{ width: '100%' }} onClick={limpiarFiltros}>Limpiar filtros</button>
+        <button className="btn secondary" style={{ width: '100%', height: 42 }} onClick={limpiarFiltros}>Limpiar filtros</button>
       </div>
       <p style={{ color: 'var(--muted)', fontSize: 13, marginTop: -12, marginBottom: 24 }}>
         {filtradosPrestamos.length} de {prestamos.length} prestamos coinciden con los filtros actuales.
