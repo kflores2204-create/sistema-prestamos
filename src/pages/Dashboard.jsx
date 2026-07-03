@@ -215,28 +215,26 @@ export default function Dashboard() {
     <div>
       <h2 style={{ color: 'var(--navy)', marginBottom: 4 }}>Dashboard</h2>
       <p style={{ color: 'var(--muted)', marginTop: 0, marginBottom: 16 }}>
-        Vista ejecutiva con filtros. {filtradosPrestamos.length} de {prestamos.length} prestamos coinciden con los filtros actuales.
+        Vista ejecutiva con filtros.
       </p>
 
       {/* ---------------- Filtros ---------------- */}
-      <div style={{ ...panelStyle, display: 'flex', flexWrap: 'wrap', gap: 16, alignItems: 'end' }}>
-        <label style={{ minWidth: 150 }}>Desde
+      <div style={{ ...panelStyle, display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))', gap: 16, alignItems: 'end' }}>
+        <label>Desde
           <input className="input" type="date" value={fechaDesde} onChange={(e) => setFechaDesde(e.target.value)} />
         </label>
-        <label style={{ minWidth: 150 }}>Hasta
+        <label>Hasta
           <input className="input" type="date" value={fechaHasta} onChange={(e) => setFechaHasta(e.target.value)} />
         </label>
-        <div style={{ minWidth: 200 }}>
-          <label style={{ display: 'block', marginBottom: 4 }}>Cuenta</label>
+        <label>Cuenta
           <MultiSelect
             options={cuentasDisponibles}
             selected={cuentasSel}
             onChange={setCuentasSel}
             placeholder="Todas las cuentas"
           />
-        </div>
-        <div style={{ minWidth: 200 }}>
-          <label style={{ display: 'block', marginBottom: 4 }}>Estado</label>
+        </label>
+        <label>Estado
           <MultiSelect
             options={ESTADOS}
             selected={estadosSel}
@@ -244,12 +242,15 @@ export default function Dashboard() {
             placeholder="Todos los estados"
             labelFor={(e) => e.charAt(0) + e.slice(1).toLowerCase()}
           />
-        </div>
-        <label style={{ minWidth: 200, flex: 1 }}>Cliente (nombre o DNI)
+        </label>
+        <label>Cliente (nombre o DNI)
           <input className="input" placeholder="Buscar cliente..." value={clienteQuery} onChange={(e) => setClienteQuery(e.target.value)} />
         </label>
-        <button className="btn secondary" onClick={limpiarFiltros}>Limpiar filtros</button>
+        <button className="btn secondary" style={{ width: '100%' }} onClick={limpiarFiltros}>Limpiar filtros</button>
       </div>
+      <p style={{ color: 'var(--muted)', fontSize: 13, marginTop: -12, marginBottom: 24 }}>
+        {filtradosPrestamos.length} de {prestamos.length} prestamos coinciden con los filtros actuales.
+      </p>
 
       {/* ---------------- KPIs ---------------- */}
       <div className="kpi-grid">
