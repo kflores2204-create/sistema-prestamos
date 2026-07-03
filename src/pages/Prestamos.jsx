@@ -184,7 +184,7 @@ export default function Prestamos() {
         />
       </div>
 
-      <div className="kpi-grid" style={{ gridTemplateColumns: 'repeat(3, minmax(160px, 1fr))', marginBottom: 20 }}>
+      <div className="kpi-grid" style={{ marginBottom: 20 }}>
         <div className="kpi-card"><div className="label">Capital</div><div className="value" style={{ fontSize: 20 }}>{money(totales.capital)}</div></div>
         <div className="kpi-card"><div className="label">Total a Pagar</div><div className="value" style={{ fontSize: 20 }}>{money(totales.totalPagar)}</div></div>
         <div className="kpi-card"><div className="label">Saldo</div><div className="value" style={{ fontSize: 20 }}>{money(totales.saldo)}</div></div>
