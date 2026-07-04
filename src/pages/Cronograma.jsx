@@ -31,6 +31,7 @@ export default function Cronograma() {
       .order('fecha_prestamo', { ascending: false })
       .then(({ data }) => {
         setOpciones(data || [])
+        setFiltroCuentas(new Set((data || []).map((o) => o.cuenta)))
       })
   }, [])
 
@@ -53,7 +54,7 @@ export default function Cronograma() {
   const cuentasDisponibles = [...new Set(opciones.map((o) => o.cuenta))]
 
   const filtrados = opciones
-    .filter((o) => filtroCuentas.size === 0 || filtroCuentas.has(o.cuenta))
+    .filter((o) => filtroCuentas.has(o.cuenta))
     .filter((o) => query.length < 1 || `${o.cliente} ${o.codigo} ${o.cliente_dni || ''}`.toLowerCase().includes(query.toLowerCase()))
     .sort((a, b) => {
       const da = new Date(a.fecha_prestamo), db = new Date(b.fecha_prestamo)
