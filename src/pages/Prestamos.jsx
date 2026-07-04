@@ -16,7 +16,7 @@ const ESTADOS = ['ACTIVO', 'EN PROCESO', 'ATRASADO', 'FINALIZADO']
 export default function Prestamos() {
   const { cuenta } = useParams()
   const [prestamos, setPrestamos] = useState([])
-  const [filtroEstados, setFiltroEstados] = useState(new Set())
+  const [filtroEstados, setFiltroEstados] = useState(new Set(ESTADOS))
   const [busqueda, setBusqueda] = useState('')
   const [ordenFecha, setOrdenFecha] = useState('desc')
   const [expanded, setExpanded] = useState(null)
@@ -30,7 +30,7 @@ export default function Prestamos() {
     setPrestamos(data || [])
   }
 
-  useEffect(() => { cargar(); cerrarDrawer(); setFiltroEstados(new Set()); setBusqueda('') }, [cuenta])
+  useEffect(() => { cargar(); cerrarDrawer(); setFiltroEstados(new Set(ESTADOS)); setBusqueda('') }, [cuenta])
 
   function cerrarDrawer() {
     setExpanded(null)
@@ -142,7 +142,7 @@ export default function Prestamos() {
   }
 
   const filtrados = prestamos
-    .filter((p) => filtroEstados.size === 0 || filtroEstados.has(p.estado))
+    .filter((p) => filtroEstados.has(p.estado))
     .filter((p) => {
       if (!busqueda) return true
       const t = `${p.cliente} ${p.cliente_dni || ''} ${p.codigo}`.toLowerCase()
