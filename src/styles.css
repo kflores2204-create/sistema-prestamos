@@ -319,7 +319,7 @@ label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; font-w
   font-size: 14px; font-family: inherit; background: white; color: var(--text);
 }
 input[type="date"].input {
-  min-height: 42px; -webkit-appearance: none; appearance: none;
+  min-height: 42px;
 }
 input[type="date"].input::-webkit-calendar-picker-indicator {
   padding: 4px; margin-left: 6px; cursor: pointer; opacity: 0.65;
