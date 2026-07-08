@@ -7,6 +7,7 @@ import { FRECUENCIAS, fechaCuota, montoConRecargo, tieneRecargoAplicado, estaAtr
 import { cambiarEstadoCuotaConAuditoria } from '../lib/cuotaPagos'
 import MultiSelect from '../components/MultiSelect'
 import EstadoSelect from '../components/EstadoSelect'
+import FechaInput from '../components/FechaInput'
 
 const money = (n) => `S/. ${Number(n || 0).toLocaleString('es-PE', { minimumFractionDigits: 2 })}`
 const fechaCorta = formatFecha
@@ -322,7 +323,7 @@ export default function Prestamos() {
                     <input className="input" required value={formEdit.cliente} onChange={(e) => setFormEdit((f) => ({ ...f, cliente: e.target.value }))} />
                   </label>
                   <label>Fecha de prestamo
-                    <input className="input" type="date" required value={formEdit.fecha_prestamo} onChange={(e) => setFormEdit((f) => ({ ...f, fecha_prestamo: e.target.value }))} />
+                    <FechaInput required value={formEdit.fecha_prestamo} onChange={(v) => setFormEdit((f) => ({ ...f, fecha_prestamo: v }))} />
                   </label>
                   <label>Capital (S/.)
                     <input className="input" type="number" min="0" step="0.01" required value={formEdit.capital} onChange={(e) => setFormEdit((f) => ({ ...f, capital: e.target.value }))} />
