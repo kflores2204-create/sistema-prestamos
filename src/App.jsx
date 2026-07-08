@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { BrowserRouter, Routes, Route, NavLink, Navigate, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard, Wallet, Landmark, Users,
-  CalendarDays, RefreshCw, LogOut, UserCog,
+  CalendarDays, RefreshCw, LogOut, UserCog, ClipboardCheck,
 } from 'lucide-react'
 import { supabase, signOut } from './lib/supabase'
 import { syncTodo } from './lib/calendarSync'
@@ -15,6 +15,7 @@ import Cuentas from './pages/Cuentas'
 import FlujoCaja from './pages/FlujoCaja'
 import Clientes from './pages/Clientes'
 import Cobros from './pages/Cobros'
+import CuadreCaja from './pages/CuadreCaja'
 import Equipo from './pages/Equipo'
 import Privacidad from './pages/Privacidad'
 import './styles.css'
@@ -22,6 +23,7 @@ import './styles.css'
 const MODULOS = [
   { to: '/', end: true, label: 'Dashboard', icon: LayoutDashboard },
   { to: '/cobros', label: 'Cobros del Dia', icon: Wallet },
+  { to: '/cuadre-caja', label: 'Cuadre de Caja', icon: ClipboardCheck },
   { to: '/cuentas', label: 'Cuentas', icon: Landmark },
   { to: '/clientes', label: 'Clientes', icon: Users },
   { to: '/cronograma', label: 'Cronograma Cliente', icon: CalendarDays },
@@ -142,6 +144,7 @@ function AppAutenticada({ session }) {
         <Routes>
           <Route path="/" element={<Dashboard />} />
           <Route path="/cobros" element={<Cobros />} />
+          <Route path="/cuadre-caja" element={<CuadreCaja />} />
           <Route path="/cuentas" element={<Cuentas />} />
           <Route path="/prestamos/:cuenta" element={<Prestamos />} />
           <Route path="/flujo-caja/:cuenta" element={<FlujoCaja />} />
