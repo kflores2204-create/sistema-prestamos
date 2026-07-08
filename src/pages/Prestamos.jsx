@@ -3,7 +3,8 @@ import { useParams, Link } from 'react-router-dom'
 import { Pencil, Trash2, FileText, ChevronLeft } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { syncCuota } from '../lib/calendarSync'
-import { FRECUENCIAS, fechaCuota, montoConRecargo, tieneRecargoAplicado, estaAtrasada, formatFecha, hoyISO } from '../lib/prestamoUtils'
+import { FRECUENCIAS, fechaCuota, montoConRecargo, tieneRecargoAplicado, estaAtrasada, formatFecha, formatFechaHora, hoyISO } from '../lib/prestamoUtils'
+import { cambiarEstadoCuotaConAuditoria } from '../lib/cuotaPagos'
 import MultiSelect from '../components/MultiSelect'
 import EstadoSelect from '../components/EstadoSelect'
 
@@ -38,10 +39,10 @@ export default function Prestamos() {
   }
 
   async function cambiarEstadoCuota(cuota, nuevoEstado, prestamo) {
-    const { data: updated } = await supabase
-      .from('cuotas')
-      .update({ estado: nuevoEstado, fecha_pago: nuevoEstado === 'Pagado' ? hoyISO() : null })
-      .eq('id', cuota.id).select().single()
+    const updated = await cambiarEstadoCuotaConAuditoria(
+      cuota, nuevoEstado, prestamo.recargo_pct,
+      `${prestamo.codigo} - ${prestamo.cliente}`
+    )
     try {
       await syncCuota(updated, {
         codigo: prestamo.codigo, num_cuotas: prestamo.num_cuotas,
@@ -261,16 +262,28 @@ export default function Prestamos() {
                     {cuotasDetalle.map((c) => {
                       const capitalCuota = Number(expanded.capital) / Number(expanded.num_cuotas)
                       const interesCuota = Number(expanded.interes_generado || 0) / Number(expanded.num_cuotas)
+                      const yaPagada = c.estado === 'Pagado'
+                      const montoFinal = yaPagada ? Number(c.monto) + Number(c.monto_recargo || 0) : montoConRecargo(c, expanded.recargo_pct)
                       return (
                       <tr key={c.id}>
                         <td data-label="Cuota N">{c.numero_cuota}</td>
-                        <td data-label="Fecha">{fechaCorta(c.fecha_vencimiento)}</td>
+                        <td data-label="Fecha">
+                          {fechaCorta(c.fecha_vencimiento)}
+                          {yaPagada && c.pagado_en && (
+                            <div style={{ fontSize: 11, color: 'var(--muted)' }}>Pagado: {formatFechaHora(c.pagado_en)}</div>
+                          )}
+                        </td>
                         <td data-label="Monto">
-                          <b>{money(montoConRecargo(c, expanded.recargo_pct))}</b>
+                          <b>{money(montoFinal)}</b>
                           <div style={{ fontSize: 11, color: 'var(--muted)' }}>
                             Capital {money(capitalCuota)} + Interes {money(interesCuota)}
                           </div>
-                          {tieneRecargoAplicado(c, expanded.recargo_pct) && (
+                          {yaPagada && Number(c.monto_recargo) > 0 && (
+                            <div style={{ fontSize: 11, color: 'var(--red)' }}>
+                              incluye recargo por atraso {money(c.monto_recargo)}
+                            </div>
+                          )}
+                          {!yaPagada && tieneRecargoAplicado(c, expanded.recargo_pct) && (
                             <div style={{ fontSize: 11, color: 'var(--red)' }}>
                               incluye recargo {(Number(expanded.recargo_pct) * 100).toFixed(0)}%
                             </div>
@@ -286,6 +299,9 @@ export default function Prestamos() {
                               <span className="badge atrasado">Atrasado</span>
                             )}
                           </div>
+                          {yaPagada && c.pagado_por && (
+                            <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>por {c.pagado_por}</div>
+                          )}
                         </td>
                       </tr>
                       )
