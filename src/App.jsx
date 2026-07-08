@@ -6,6 +6,7 @@ import {
 } from 'lucide-react'
 import { supabase, signOut } from './lib/supabase'
 import { syncTodo } from './lib/calendarSync'
+import { EmpresaProvider } from './lib/EmpresaContext'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import Prestamos from './pages/Prestamos'
@@ -175,7 +176,7 @@ export default function App() {
       <Routes>
         {/* publica: Google necesita poder acceder a esta pagina sin iniciar sesion */}
         <Route path="/privacidad" element={<Privacidad />} />
-        <Route path="/*" element={session ? <AppAutenticada session={session} /> : <Login />} />
+        <Route path="/*" element={session ? <EmpresaProvider><AppAutenticada session={session} /></EmpresaProvider> : <Login />} />
       </Routes>
     </BrowserRouter>
   )
