@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { formatFecha } from '../lib/prestamoUtils'
 import { History, Pencil, Merge, Check, X as XIcon, UserPlus } from 'lucide-react'
@@ -282,7 +283,11 @@ export default function Clientes() {
                 {historial.prestamos.map((p) => (
                   <tr key={p.id}>
                     <td data-label="Codigo">{p.codigo}</td>
-                    <td data-label="Cuenta">{p.cuenta}</td>
+                    <td data-label="Cuenta">
+                      <Link to={`/prestamos/${encodeURIComponent(p.cuenta)}`} style={{ color: 'var(--navy)', fontWeight: 600, textDecoration: 'underline' }}>
+                        {p.cuenta}
+                      </Link>
+                    </td>
                     <td data-label="Fecha">{fechaCorta(p.fecha_prestamo)}</td>
                     <td data-label="Capital">{money(p.capital)}</td>
                     <td data-label="Estado"><span className={`badge ${estadoClass(p.estado)}`}>{p.estado}</span></td>
