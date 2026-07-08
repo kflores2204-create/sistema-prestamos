@@ -369,6 +369,9 @@ input[type="date"].input::-webkit-calendar-picker-indicator:hover { opacity: 1; 
   color: var(--muted); font-size: 12px; text-align: center;
 }
 
+.fila-clickeable { cursor: pointer; }
+.fila-clickeable:hover { background: var(--bg); }
+
 @media (max-width: 640px) {
   .cronograma-print { padding: 20px 16px; }
   .cronograma-header { flex-wrap: wrap; gap: 14px; }
