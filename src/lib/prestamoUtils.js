@@ -72,3 +72,12 @@ export function montoConRecargo(cuota, recargoPct) {
   }
   return base
 }
+
+/** Formatea un timestamp ISO completo (con hora, ej. columna pagado_en) a "DD/MM/YYYY HH:mm". */
+export function formatFechaHora(isoTimestamp) {
+  if (!isoTimestamp) return ''
+  const d = new Date(isoTimestamp)
+  const fecha = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`
+  const hora = d.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' })
+  return `${fecha} ${hora}`
+}
