@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase'
 import { syncCuota } from '../lib/calendarSync'
 import { montoConRecargo, estaAtrasada, hoyISO, formatFecha } from '../lib/prestamoUtils'
 import { cambiarEstadoCuotaConAuditoria } from '../lib/cuotaPagos'
+import FechaInput from '../components/FechaInput'
 
 const money = (n) => `S/. ${Number(n || 0).toLocaleString('es-PE', { minimumFractionDigits: 2 })}`
 
@@ -74,7 +75,7 @@ export default function Cobros() {
 
       <div style={{ display: 'flex', gap: 16, alignItems: 'end', flexWrap: 'wrap', marginBottom: 16 }}>
         <label>Fecha
-          <input className="input" type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} />
+          <FechaInput value={fecha} onChange={setFecha} />
         </label>
         <div className="filtro-chips">
           <button className={`chip ${incluirAtrasados ? 'chip-active' : ''}`} onClick={() => setIncluirAtrasados(true)}>
