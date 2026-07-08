@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { hoyISO, formatFecha, formatFechaHora } from '../lib/prestamoUtils'
+import FechaInput from '../components/FechaInput'
 
 const money = (n) => `S/. ${Number(n || 0).toLocaleString('es-PE', { minimumFractionDigits: 2 })}`
 
@@ -68,10 +69,10 @@ export default function CuadreCaja() {
 
       <div style={{ display: 'flex', gap: 16, alignItems: 'end', flexWrap: 'wrap', marginBottom: 20 }}>
         <label>Desde
-          <input className="input" type="date" value={fechaDesde} onChange={(e) => setFechaDesde(e.target.value)} />
+          <FechaInput value={fechaDesde} onChange={setFechaDesde} />
         </label>
         <label>Hasta
-          <input className="input" type="date" value={fechaHasta} onChange={(e) => setFechaHasta(e.target.value)} />
+          <FechaInput value={fechaHasta} onChange={setFechaHasta} />
         </label>
         <button className="btn secondary" onClick={() => { setFechaDesde(hoyISO()); setFechaHasta(hoyISO()) }}>Solo hoy</button>
       </div>
