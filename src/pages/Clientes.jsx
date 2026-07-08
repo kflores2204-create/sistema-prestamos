@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { formatFecha } from '../lib/prestamoUtils'
 import { History, Pencil, Merge, Check, X as XIcon, UserPlus } from 'lucide-react'
+import PrestamoDetalleDrawer from '../components/PrestamoDetalleDrawer'
 
 const money = (n) => `S/. ${Number(n || 0).toLocaleString('es-PE', { minimumFractionDigits: 2 })}`
 const fechaCorta = formatFecha
@@ -21,6 +21,7 @@ export default function Clientes() {
   const [fusionando2, setFusionando2] = useState(false)
 
   const [creando, setCreando] = useState(false)
+  const [prestamoDrawerId, setPrestamoDrawerId] = useState(null)
   const [nuevoForm, setNuevoForm] = useState({ dni: '', nombre: '' })
   const [creandoGuardando, setCreandoGuardando] = useState(false)
   const [creandoError, setCreandoError] = useState('')
@@ -282,12 +283,15 @@ export default function Clientes() {
               <tbody>
                 {historial.prestamos.map((p) => (
                   <tr key={p.id}>
-                    <td data-label="Codigo">{p.codigo}</td>
-                    <td data-label="Cuenta">
-                      <Link to={`/prestamos/${encodeURIComponent(p.cuenta)}`} style={{ color: 'var(--navy)', fontWeight: 600, textDecoration: 'underline' }}>
-                        {p.cuenta}
-                      </Link>
+                    <td data-label="Codigo">
+                      <button
+                        onClick={() => setPrestamoDrawerId(p.id)}
+                        style={{ background: 'none', border: 'none', padding: 0, color: 'var(--navy)', fontWeight: 700, textDecoration: 'underline', cursor: 'pointer' }}
+                      >
+                        {p.codigo}
+                      </button>
                     </td>
+                    <td data-label="Cuenta">{p.cuenta}</td>
                     <td data-label="Fecha">{fechaCorta(p.fecha_prestamo)}</td>
                     <td data-label="Capital">{money(p.capital)}</td>
                     <td data-label="Estado"><span className={`badge ${estadoClass(p.estado)}`}>{p.estado}</span></td>
@@ -301,6 +305,8 @@ export default function Clientes() {
           </div>
         </>
       )}
+
+      <PrestamoDetalleDrawer prestamoId={prestamoDrawerId} onClose={() => setPrestamoDrawerId(null)} />
     </div>
   )
 }
