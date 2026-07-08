@@ -22,6 +22,22 @@ function adminEmails() {
 }
 
 /**
+ * Verifica que la peticion venga de un usuario logueado valido (cualquier
+ * miembro del equipo, no necesariamente admin). Util para endpoints que no
+ * son de administracion, como la consulta de RUC.
+ */
+export async function verificarUsuario(req) {
+  const authHeader = req.headers.authorization || ''
+  const token = authHeader.replace('Bearer ', '')
+  if (!token) return null
+
+  const admin = adminClient()
+  const { data, error } = await admin.auth.getUser(token)
+  if (error || !data?.user) return null
+  return data.user
+}
+
+/**
  * Verifica el token del usuario que hace la peticion y confirma que es un admin autorizado.
  * Devuelve el usuario si es valido, o null si no.
  */
