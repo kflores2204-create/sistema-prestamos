@@ -100,13 +100,17 @@ export default function Prestamos() {
         .single()
       if (errP) throw errP
 
-      // conserva cuales cuotas ya estaban Pagado, por numero de cuota, antes de recalcular fechas/montos
+      // conserva TODO el historial de las cuotas que ya estaban Pagado (monto
+      // exacto cobrado, fecha real de pago, quien la marco, recargo) - editar
+      // el prestamo NUNCA debe borrar el rastro de un pago ya realizado.
       const { data: cuotasActuales } = await supabase
-        .from('cuotas').select('numero_cuota, estado').eq('prestamo_id', expanded.id)
-      const pagadasPorNumero = new Set((cuotasActuales || []).filter((c) => c.estado === 'Pagado').map((c) => c.numero_cuota))
+        .from('cuotas').select('*').eq('prestamo_id', expanded.id)
+      const cuotasPagadasPorNumero = new Map(
+        (cuotasActuales || []).filter((c) => c.estado === 'Pagado').map((c) => [c.numero_cuota, c])
+      )
 
       const numCuotasNuevo = Number(formEdit.num_cuotas)
-      const sePerderian = [...pagadasPorNumero].filter((n) => n > numCuotasNuevo)
+      const sePerderian = [...cuotasPagadasPorNumero.keys()].filter((n) => n > numCuotasNuevo)
       if (sePerderian.length > 0) {
         const ok = confirm(
           `Advertencia: reducir a ${numCuotasNuevo} cuotas va a eliminar el pago ya registrado en la(s) cuota(s) ${sePerderian.join(', ')}. Continuar de todas formas?`
@@ -116,12 +120,27 @@ export default function Prestamos() {
 
       const nuevasCuotas = []
       for (let n = 1; n <= numCuotasNuevo; n++) {
-        nuevasCuotas.push({
-          prestamo_id: expanded.id, numero_cuota: n,
-          fecha_vencimiento: fechaCuota(formEdit.fecha_prestamo, n, formEdit.frecuencia),
-          monto: prestamoActualizado.monto_cuota,
-          estado: pagadasPorNumero.has(n) ? 'Pagado' : 'Pendiente',
-        })
+        const pagadaAntes = cuotasPagadasPorNumero.get(n)
+        if (pagadaAntes) {
+          nuevasCuotas.push({
+            prestamo_id: expanded.id, numero_cuota: n,
+            fecha_vencimiento: pagadaAntes.fecha_vencimiento,
+            monto: pagadaAntes.monto,
+            estado: 'Pagado',
+            fecha_pago: pagadaAntes.fecha_pago,
+            pagado_en: pagadaAntes.pagado_en,
+            pagado_por: pagadaAntes.pagado_por,
+            monto_recargo: pagadaAntes.monto_recargo,
+            movimiento_recargo_id: pagadaAntes.movimiento_recargo_id,
+          })
+        } else {
+          nuevasCuotas.push({
+            prestamo_id: expanded.id, numero_cuota: n,
+            fecha_vencimiento: fechaCuota(formEdit.fecha_prestamo, n, formEdit.frecuencia),
+            monto: prestamoActualizado.monto_cuota,
+            estado: 'Pendiente',
+          })
+        }
       }
 
       await supabase.from('cuotas').delete().eq('prestamo_id', expanded.id)
