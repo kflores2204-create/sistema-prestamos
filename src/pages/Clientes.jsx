@@ -288,7 +288,7 @@ export default function Clientes() {
                     onClick={() => setPrestamoDrawerId(p.id)}
                   >
                     <td data-label="Codigo">
-                      <span style={{ color: 'var(--navy)', fontWeight: 700, textDecoration: 'underline' }}>
+                      <span style={{ color: 'var(--navy)', fontWeight: 700, fontStyle: 'italic' }}>
                         {p.codigo}
                       </span>
                     </td>
