@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { UserPlus, Trash2, Mail } from 'lucide-react'
+import { UserPlus, Trash2, Mail, Search } from 'lucide-react'
 import { getAccessToken } from '../lib/supabase'
 
 function generarPassword() {
@@ -33,6 +33,16 @@ export default function Equipo() {
   const [password, setPassword] = useState(generarPassword())
   const [creando, setCreando] = useState(false)
   const [creado, setCreado] = useState(null)
+
+  const [rucQuery, setRucQuery] = useState('')
+  const [rucResultado, setRucResultado] = useState(null)
+  const [rucError, setRucError] = useState('')
+  const [rucBuscando, setRucBuscando] = useState(false)
+
+  const [dniQuery, setDniQuery] = useState('')
+  const [dniResultado, setDniResultado] = useState(null)
+  const [dniError, setDniError] = useState('')
+  const [dniBuscando, setDniBuscando] = useState(false)
 
   async function cargar() {
     setError('')
@@ -73,6 +83,34 @@ export default function Equipo() {
     } catch (err) {
       setError(err.message)
     }
+  }
+
+  async function buscarRuc(e) {
+    e.preventDefault()
+    setRucBuscando(true)
+    setRucError('')
+    setRucResultado(null)
+    try {
+      const data = await llamarApi(`/api/consulta-ruc?ruc=${encodeURIComponent(rucQuery.trim())}`)
+      setRucResultado(data)
+    } catch (err) {
+      setRucError(err.message)
+    }
+    setRucBuscando(false)
+  }
+
+  async function buscarDni(e) {
+    e.preventDefault()
+    setDniBuscando(true)
+    setDniError('')
+    setDniResultado(null)
+    try {
+      const data = await llamarApi(`/api/consulta-dni?dni=${encodeURIComponent(dniQuery.trim())}`)
+      setDniResultado(data)
+    } catch (err) {
+      setDniError(err.message)
+    }
+    setDniBuscando(false)
   }
 
   return (
@@ -156,6 +194,61 @@ export default function Equipo() {
           ))}
         </tbody>
       </table>
+
+      <h3 style={{ color: 'var(--navy)', marginTop: 32 }}>Probar consulta de RUC</h3>
+      <p style={{ color: 'var(--muted)', marginTop: 4, marginBottom: 16 }}>
+        Bloque temporal para verificar que la integracion con Decolecta funciona.
+        Requiere la variable de entorno DECOLECTA_TOKEN configurada en Vercel.
+      </p>
+      <form onSubmit={buscarRuc} style={{ display: 'flex', gap: 12, alignItems: 'end', flexWrap: 'wrap', marginBottom: 16, maxWidth: 500 }}>
+        <label style={{ flex: 1 }}>RUC (11 digitos)
+          <input className="input" value={rucQuery} onChange={(e) => setRucQuery(e.target.value)} maxLength={11} placeholder="Ej: 20601030013" />
+        </label>
+        <button className="btn" type="submit" disabled={rucBuscando}>
+          <Search size={15} strokeWidth={2.4} /> {rucBuscando ? 'Buscando...' : 'Buscar'}
+        </button>
+      </form>
+      {rucError && (
+        <div style={{ background: 'var(--red-bg)', color: 'var(--red)', padding: '10px 14px', borderRadius: 10, marginBottom: 16, fontSize: 14, maxWidth: 500 }}>
+          {rucError}
+        </div>
+      )}
+      {rucResultado && (
+        <div className="kpi-card" style={{ maxWidth: 500 }}>
+          <div className="label">Resultado</div>
+          <p style={{ margin: '10px 0 4px', fontSize: 14 }}><b>RUC:</b> {rucResultado.ruc}</p>
+          <p style={{ margin: '4px 0', fontSize: 14 }}><b>Razon social:</b> {rucResultado.razon_social || '—'}</p>
+          <p style={{ margin: '4px 0', fontSize: 14 }}><b>Direccion:</b> {rucResultado.direccion || '—'}</p>
+          <p style={{ margin: '4px 0', fontSize: 14 }}><b>Estado:</b> {rucResultado.estado || '—'}</p>
+          <p style={{ margin: '4px 0', fontSize: 14 }}><b>Condicion:</b> {rucResultado.condicion || '—'}</p>
+        </div>
+      )}
+
+      <h3 style={{ color: 'var(--navy)', marginTop: 32 }}>Probar consulta de DNI</h3>
+      <p style={{ color: 'var(--muted)', marginTop: 4, marginBottom: 16 }}>
+        Mismo proveedor (Decolecta). Si esto falla con error de autorizacion, es
+        señal de que el servicio de DNI si esta cerrado para tu cuenta.
+      </p>
+      <form onSubmit={buscarDni} style={{ display: 'flex', gap: 12, alignItems: 'end', flexWrap: 'wrap', marginBottom: 16, maxWidth: 500 }}>
+        <label style={{ flex: 1 }}>DNI (8 digitos)
+          <input className="input" value={dniQuery} onChange={(e) => setDniQuery(e.target.value)} maxLength={8} placeholder="Ej: 46027897" />
+        </label>
+        <button className="btn" type="submit" disabled={dniBuscando}>
+          <Search size={15} strokeWidth={2.4} /> {dniBuscando ? 'Buscando...' : 'Buscar'}
+        </button>
+      </form>
+      {dniError && (
+        <div style={{ background: 'var(--red-bg)', color: 'var(--red)', padding: '10px 14px', borderRadius: 10, marginBottom: 16, fontSize: 14, maxWidth: 500 }}>
+          {dniError}
+        </div>
+      )}
+      {dniResultado && (
+        <div className="kpi-card" style={{ maxWidth: 500 }}>
+          <div className="label">Resultado</div>
+          <p style={{ margin: '10px 0 4px', fontSize: 14 }}><b>DNI:</b> {dniResultado.dni}</p>
+          <p style={{ margin: '4px 0', fontSize: 14 }}><b>Nombre completo:</b> {dniResultado.nombre_completo || '—'}</p>
+        </div>
+      )}
     </div>
   )
 }
