@@ -282,14 +282,15 @@ export default function Clientes() {
               <thead><tr><th>Codigo</th><th>Cuenta</th><th>Fecha</th><th>Capital</th><th>Estado</th></tr></thead>
               <tbody>
                 {historial.prestamos.map((p) => (
-                  <tr key={p.id}>
+                  <tr
+                    key={p.id}
+                    className="fila-clickeable"
+                    onClick={() => setPrestamoDrawerId(p.id)}
+                  >
                     <td data-label="Codigo">
-                      <button
-                        onClick={() => setPrestamoDrawerId(p.id)}
-                        style={{ background: 'none', border: 'none', padding: 0, color: 'var(--navy)', fontWeight: 700, textDecoration: 'underline', cursor: 'pointer' }}
-                      >
+                      <span style={{ color: 'var(--navy)', fontWeight: 700, textDecoration: 'underline' }}>
                         {p.codigo}
-                      </button>
+                      </span>
                     </td>
                     <td data-label="Cuenta">{p.cuenta}</td>
                     <td data-label="Fecha">{fechaCorta(p.fecha_prestamo)}</td>
