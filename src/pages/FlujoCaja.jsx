@@ -11,7 +11,7 @@ export default function FlujoCaja() {
   const [cuenta, setCuenta] = useState(null)
   const [movimientos, setMovimientos] = useState([])
   const [capitalPendiente, setCapitalPendiente] = useState(0)
-  const [nuevo, setNuevo] = useState({ fecha: hoyISO(), monto: '', detalle: '' })
+  const [nuevo, setNuevo] = useState({ fecha: hoyISO(), tipo: 'egreso', monto: '', detalle: '' })
   const [guardando, setGuardando] = useState(false)
 
   async function cargar() {
@@ -41,10 +41,11 @@ export default function FlujoCaja() {
   async function agregarMovimiento(e) {
     e.preventDefault()
     setGuardando(true)
+    const monto = nuevo.tipo === 'ingreso' ? Math.abs(Number(nuevo.monto)) : -Math.abs(Number(nuevo.monto))
     await supabase.from('movimientos_caja').insert({
-      cuenta_id: cuenta.id, fecha: nuevo.fecha, monto: -Math.abs(Number(nuevo.monto)), detalle: nuevo.detalle,
+      cuenta_id: cuenta.id, fecha: nuevo.fecha, monto, detalle: nuevo.detalle,
     })
-    setNuevo({ fecha: hoyISO(), monto: '', detalle: '' })
+    setNuevo({ fecha: hoyISO(), tipo: 'egreso', monto: '', detalle: '' })
     setGuardando(false)
     cargar()
   }
@@ -52,6 +53,7 @@ export default function FlujoCaja() {
   if (!cuenta) return <p style={{ color: 'var(--muted)' }}>Cargando...</p>
 
   const gastosHistoricoTotal = movimientos.filter((m) => Number(m.monto) < 0).reduce((acc, m) => acc - Number(m.monto), 0)
+  const ingresosManualesTotal = movimientos.filter((m) => Number(m.monto) > 0).reduce((acc, m) => acc + Number(m.monto), 0)
 
   return (
     <div>
@@ -83,8 +85,12 @@ export default function FlujoCaja() {
           <div className="value" style={{ color: 'var(--red)' }}>{money(capitalPendiente)}</div>
         </div>
         <div className="kpi-card">
+          <div className="label">Ingresos Manuales</div>
+          <div className="value" style={{ color: 'var(--green)' }}>{money(ingresosManualesTotal)}</div>
+        </div>
+        <div className="kpi-card">
           <div className="label">Gastos / Retiros</div>
-          <div className="value">{money(cuenta.total_movimientos < 0 ? -cuenta.total_movimientos : 0)}</div>
+          <div className="value">{money(gastosHistoricoTotal)}</div>
         </div>
         <div className="kpi-card" style={{ borderColor: 'var(--navy)' }}>
           <div className="label">Saldo Actual</div>
@@ -115,8 +121,14 @@ export default function FlujoCaja() {
         )}
       </div>
 
-      <h3 style={{ color: 'var(--navy)' }}>Agregar gasto / retiro</h3>
+      <h3 style={{ color: 'var(--navy)' }}>Agregar movimiento</h3>
       <form onSubmit={agregarMovimiento} style={{ display: 'flex', gap: 12, alignItems: 'end', flexWrap: 'wrap', marginBottom: 24 }}>
+        <label>Tipo
+          <select className="input" value={nuevo.tipo} onChange={(e) => setNuevo((n) => ({ ...n, tipo: e.target.value }))}>
+            <option value="egreso">Egreso / Retiro</option>
+            <option value="ingreso">Ingreso manual</option>
+          </select>
+        </label>
         <label>Fecha
           <input className="input" type="date" required value={nuevo.fecha} onChange={(e) => setNuevo((n) => ({ ...n, fecha: e.target.value }))} />
         </label>
