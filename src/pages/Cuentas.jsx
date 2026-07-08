@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Plus, Landmark, ArrowRight, Pencil } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { hoyISO, formatFecha } from '../lib/prestamoUtils'
+import FechaInput from '../components/FechaInput'
 
 const money = (n) => `S/. ${Number(n || 0).toLocaleString('es-PE', { minimumFractionDigits: 2 })}`
 
@@ -50,7 +51,7 @@ function FormCuenta({ inicial, onGuardar, onCancelar, cuentas, guardando }) {
           <input className="input" type="number" step="0.01" required value={saldoInicial} onChange={(e) => setSaldoInicial(e.target.value)} />
         </label>
         <label style={{ flex: 1 }}>Fecha de ese saldo
-          <input className="input" type="date" required value={fechaSaldo} onChange={(e) => setFechaSaldo(e.target.value)} />
+          <FechaInput required value={fechaSaldo} onChange={setFechaSaldo} />
         </label>
       </div>
       <label>A donde va el interes que generen los prestamos de esta cuenta
