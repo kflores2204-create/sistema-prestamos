@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { syncCuota } from '../lib/calendarSync'
 import { montoConRecargo, estaAtrasada, hoyISO, formatFecha } from '../lib/prestamoUtils'
+import { cambiarEstadoCuotaConAuditoria } from '../lib/cuotaPagos'
 
 const money = (n) => `S/. ${Number(n || 0).toLocaleString('es-PE', { minimumFractionDigits: 2 })}`
 
@@ -44,8 +45,10 @@ export default function Cobros() {
   useEffect(() => { cargar() }, [fecha, incluirAtrasados])
 
   async function marcarPagado(cuota) {
-    const { data: updated } = await supabase
-      .from('cuotas').update({ estado: 'Pagado', fecha_pago: hoyISO() }).eq('id', cuota.id).select().single()
+    const updated = await cambiarEstadoCuotaConAuditoria(
+      cuota, 'Pagado', cuota.prestamos.recargo_pct,
+      `${cuota.prestamos.codigo} - ${cuota.prestamos.cliente?.nombre || 'Cliente'}`
+    )
     try {
       await syncCuota(updated, {
         codigo: cuota.prestamos.codigo,
