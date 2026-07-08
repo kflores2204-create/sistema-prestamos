@@ -315,6 +315,7 @@ tbody tr:hover { background: #fafafe; }
 label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; font-weight: 600; color: var(--navy); }
 .field-label { display: block; font-size: 13px; font-weight: 600; color: var(--navy); margin-bottom: 4px; }
 .input {
+  width: 100%;
   padding: 9px 12px; border: 1px solid var(--border); border-radius: 8px;
   font-size: 14px; font-family: inherit; background: white; color: var(--text);
 }
@@ -371,6 +372,8 @@ input[type="date"].input::-webkit-calendar-picker-indicator:hover { opacity: 1; 
 
 .fila-clickeable { cursor: pointer; }
 .fila-clickeable:hover { background: var(--bg); }
+
+.filtros-grid > * { min-width: 0; }
 
 @media (max-width: 640px) {
   .cronograma-print { padding: 20px 16px; }
