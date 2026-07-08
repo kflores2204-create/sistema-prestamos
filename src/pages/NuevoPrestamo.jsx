@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams, Link } from 'react-router-dom'
 import { ChevronLeft } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { FRECUENCIAS, fechaCuota, hoyISO } from '../lib/prestamoUtils'
+import FechaInput from '../components/FechaInput'
 import BuscadorPersona from '../components/BuscadorPersona'
 
 export default function NuevoPrestamo() {
@@ -141,7 +142,7 @@ export default function NuevoPrestamo() {
 
         <label>
           Fecha de prestamo
-          <input className="input" type="date" required value={fecha} onChange={(e) => setFecha(e.target.value)} />
+          <FechaInput required value={fecha} onChange={setFecha} />
         </label>
         <label>
           Capital (S/.)
