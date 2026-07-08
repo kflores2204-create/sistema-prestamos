@@ -218,7 +218,7 @@ export default function Dashboard() {
       </p>
 
       {/* ---------------- Filtros ---------------- */}
-      <div style={{ ...panelStyle, display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))', gap: 16, alignItems: 'start' }}>
+      <div className="filtros-grid" style={{ ...panelStyle, display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))', gap: 16, alignItems: 'start' }}>
         <label>Desde
           <input className="input" type="date" value={fechaDesde} onChange={(e) => setFechaDesde(e.target.value)} />
         </label>
