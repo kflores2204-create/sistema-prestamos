@@ -6,6 +6,7 @@ import {
 import { supabase } from '../lib/supabase'
 import { hoyISO, estaAtrasada } from '../lib/prestamoUtils'
 import MultiSelect from '../components/MultiSelect'
+import FechaInput from '../components/FechaInput'
 
 const money = (n) => `S/. ${Number(n || 0).toLocaleString('es-PE', { minimumFractionDigits: 2 })}`
 const moneyCorto = (n) => {
@@ -220,10 +221,10 @@ export default function Dashboard() {
       {/* ---------------- Filtros ---------------- */}
       <div className="filtros-grid" style={{ ...panelStyle, display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))', gap: 16, alignItems: 'start' }}>
         <label>Desde
-          <input className="input" type="date" value={fechaDesde} onChange={(e) => setFechaDesde(e.target.value)} />
+          <FechaInput value={fechaDesde} onChange={setFechaDesde} />
         </label>
         <label>Hasta
-          <input className="input" type="date" value={fechaHasta} onChange={(e) => setFechaHasta(e.target.value)} />
+          <FechaInput value={fechaHasta} onChange={setFechaHasta} />
         </label>
         <div>
           <span className="field-label">Cuenta</span>
