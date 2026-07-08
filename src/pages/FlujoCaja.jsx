@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom'
 import { ChevronLeft } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { hoyISO, formatFecha } from '../lib/prestamoUtils'
+import FechaInput from '../components/FechaInput'
 
 const money = (n) => `S/. ${Number(n || 0).toLocaleString('es-PE', { minimumFractionDigits: 2 })}`
 
@@ -130,7 +131,7 @@ export default function FlujoCaja() {
           </select>
         </label>
         <label>Fecha
-          <input className="input" type="date" required value={nuevo.fecha} onChange={(e) => setNuevo((n) => ({ ...n, fecha: e.target.value }))} />
+          <FechaInput required value={nuevo.fecha} onChange={(v) => setNuevo((n) => ({ ...n, fecha: v }))} />
         </label>
         <label>Monto (S/.)
           <input className="input" type="number" min="0" step="0.01" required value={nuevo.monto} onChange={(e) => setNuevo((n) => ({ ...n, monto: e.target.value }))} />
