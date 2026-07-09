@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { formatFecha } from '../lib/prestamoUtils'
-import { History, Pencil, Merge, Check, X as XIcon, UserPlus } from 'lucide-react'
+import { History, Pencil, Merge, Check, X as XIcon, UserPlus, Loader2 } from 'lucide-react'
 import PrestamoDetalleDrawer from '../components/PrestamoDetalleDrawer'
+import { buscarNombrePorDni } from '../lib/identidad'
 
 const money = (n) => `S/. ${Number(n || 0).toLocaleString('es-PE', { minimumFractionDigits: 2 })}`
 const fechaCorta = formatFecha
@@ -25,6 +26,7 @@ export default function Clientes() {
   const [nuevoForm, setNuevoForm] = useState({ dni: '', nombre: '' })
   const [creandoGuardando, setCreandoGuardando] = useState(false)
   const [creandoError, setCreandoError] = useState('')
+  const [buscandoDniNuevo, setBuscandoDniNuevo] = useState(false)
 
   async function cargar() {
     const { data: cl } = await supabase.from('clientes').select('id, dni, nombre').order('nombre')
@@ -61,6 +63,18 @@ export default function Clientes() {
     setNuevoForm({ dni: '', nombre: '' })
     setCreandoError('')
     setCreando(true)
+  }
+
+  async function autocompletarDniNuevo(valorDni) {
+    if (!/^\d{8}$/.test(valorDni) || nuevoForm.nombre.trim()) return
+    setBuscandoDniNuevo(true)
+    try {
+      const nombreEncontrado = await buscarNombrePorDni(valorDni)
+      if (nombreEncontrado) setNuevoForm((f) => ({ ...f, nombre: nombreEncontrado }))
+    } catch {
+      // si falla, el usuario simplemente completa el nombre a mano
+    }
+    setBuscandoDniNuevo(false)
   }
 
   async function crearCliente(e) {
@@ -191,7 +205,16 @@ export default function Clientes() {
 
             <form onSubmit={crearCliente} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               <label>DNI (opcional)
-                <input className="input" value={nuevoForm.dni} onChange={(e) => setNuevoForm((f) => ({ ...f, dni: e.target.value }))} maxLength={8} />
+                <div style={{ position: 'relative' }}>
+                  <input
+                    className="input" value={nuevoForm.dni} maxLength={8}
+                    onChange={(e) => setNuevoForm((f) => ({ ...f, dni: e.target.value }))}
+                    onBlur={(e) => autocompletarDniNuevo(e.target.value.trim())}
+                  />
+                  {buscandoDniNuevo && (
+                    <Loader2 size={16} className="spin" style={{ position: 'absolute', right: 10, top: 12, color: 'var(--muted)' }} />
+                  )}
+                </div>
               </label>
               <label>Nombres y Apellidos
                 <input className="input" required value={nuevoForm.nombre} onChange={(e) => setNuevoForm((f) => ({ ...f, nombre: e.target.value }))} />
