@@ -1,13 +1,31 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { buscarNombrePorDni, buscarRazonSocialPorRuc } from '../lib/identidad'
 import Modal from './Modal'
 import TipoDocumentoInput from './TipoDocumentoInput'
 import FechaInput from './FechaInput'
 
+/**
+ * Clasifica lo que ya se escribio en el buscador antes de abrir el modal.
+ * Si es un numero de documento lo mandamos al campo de NUMERO (no al nombre)
+ * y detectamos el tipo por su longitud:
+ *   - 8 digitos  -> DNI
+ *   - 11 digitos -> RUC
+ *   - otro numero -> igual va al campo de documento (nunca al nombre)
+ * Cualquier texto se toma como nombre, como antes.
+ */
+function clasificarInicial(valorInicial) {
+  const v = (valorInicial || '').trim()
+  if (/^\d{8}$/.test(v)) return { tipoDocumento: 'DNI', dni: v, nombre: '' }
+  if (/^\d{11}$/.test(v)) return { tipoDocumento: 'RUC', dni: v, nombre: '' }
+  if (/^\d+$/.test(v)) return { tipoDocumento: 'DNI', dni: v, nombre: '' }
+  return { tipoDocumento: 'DNI', dni: '', nombre: v }
+}
+
 function formVacio(nombreInicial) {
+  const { tipoDocumento, dni, nombre } = clasificarInicial(nombreInicial)
   return {
-    dni: '', nombre: nombreInicial || '', tipoDocumento: 'DNI', celular: '', correo: '',
+    dni, nombre, tipoDocumento, celular: '', correo: '',
     fechaNacimiento: '', genero: '', facebook: '', instagram: '', tiktok: '', comentario: '',
   }
 }
@@ -29,6 +47,8 @@ function formDesdeCliente(c) {
  *  - BuscadorPersona.jsx (cuando buscas a alguien y no existe)
  *
  * Comportamiento:
+ *  - Si el buscador ya traia un numero (DNI/RUC), al abrir el modal se enruta
+ *    al campo de documento y se dispara la deteccion automatica al instante.
  *  - En cuanto el numero de documento llega a la longitud esperada (8 DNI,
  *    11 RUC) se busca automaticamente, SIN esperar a salir del campo.
  *  - Si ese numero YA es de un cliente existente, el formulario se llena con
@@ -37,7 +57,8 @@ function formDesdeCliente(c) {
  *    se sigue en modo "Nuevo cliente".
  *
  * Props:
- *  nombreInicial: string (opcional, precarga el nombre con lo que ya se escribio en la busqueda)
+ *  nombreInicial: string (opcional, lo que ya se escribio en la busqueda:
+ *                 puede ser un nombre O un numero de documento)
  *  onClose: () => void
  *  onCreado: (cliente) => void  -> se llama con la fila creada o actualizada
  */
@@ -86,6 +107,15 @@ export default function ClienteModalCrear({ nombreInicial, onClose, onCreado }) 
     } catch { setSinResultado(true) }
     setBuscando(false)
   }
+
+  // Al abrir el modal ya con un numero (venido del buscador), disparamos la
+  // misma deteccion/autocompletado que si se hubiera tecleado a mano.
+  useEffect(() => {
+    if (form.dni && (form.tipoDocumento === 'DNI' || form.tipoDocumento === 'RUC')) {
+      manejarNumero(form.dni)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   async function guardar(e) {
     e.preventDefault()
