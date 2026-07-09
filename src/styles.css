@@ -407,6 +407,18 @@ input[type="date"].input::-webkit-calendar-picker-indicator:hover { opacity: 1; 
 }
 .tabs-simple button.activo { border-bottom-color: var(--navy); color: var(--navy); }
 
+.aviso-banner {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  background: #eef1ff; color: #3949ab; border-radius: 8px; padding: 10px 14px;
+  font-size: 13px; font-weight: 600; margin-bottom: 14px;
+}
+.aviso-banner button { background: none; border: none; color: inherit; cursor: pointer; font-size: 14px; }
+
+.adicionales-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 20px; }
+@media (max-width: 640px) {
+  .adicionales-grid { grid-template-columns: 1fr; }
+}
+
 @media (max-width: 640px) {
   .cronograma-print { padding: 20px 16px; }
   .cronograma-header { flex-wrap: wrap; gap: 14px; }
