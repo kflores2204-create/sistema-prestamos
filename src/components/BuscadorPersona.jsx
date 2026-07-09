@@ -1,6 +1,7 @@
 import { useState } from 'react'
-import { Plus, Loader2 } from 'lucide-react'
-import { buscarNombrePorDni } from '../lib/identidad'
+import { Plus } from 'lucide-react'
+import { buscarNombrePorDni, buscarRazonSocialPorRuc } from '../lib/identidad'
+import TipoDocumentoInput from './TipoDocumentoInput'
 
 /**
  * Buscador de cliente (persona) reutilizable, con autocompletado y opcion de
@@ -11,36 +12,19 @@ import { buscarNombrePorDni } from '../lib/identidad'
  *
  * Props:
  *  label: string
- *  dni, nombre: string (valores actuales)
- *  onChangeDni, onChangeNombre: (string) => void
+ *  dni, nombre: string (valores actuales del numero de documento y el nombre)
+ *  tipoDocumento: string ('DNI'|'RUC'|'Pasaporte'|'Carne Extranjeria'|'Sin Documento')
+ *  onChangeDni, onChangeNombre, onChangeTipoDocumento: (string) => void
  *  personas: [{ id, dni, nombre }]  -> lista completa de clientes para autocompletar
  *  required: boolean
  */
-export default function BuscadorPersona({ label, dni, nombre, onChangeDni, onChangeNombre, personas, required }) {
+export default function BuscadorPersona({
+  label, dni, nombre, tipoDocumento, onChangeDni, onChangeNombre, onChangeTipoDocumento, personas, required,
+}) {
   const [query, setQuery] = useState(nombre || '')
   const [abierto, setAbierto] = useState(false)
-  const [buscandoDni, setBuscandoDni] = useState(false)
-  const [dniSinResultado, setDniSinResultado] = useState(false)
-
-  async function autocompletarPorDni(valorDni) {
-    setDniSinResultado(false)
-    if (!/^\d{8}$/.test(valorDni) || nombre.trim()) return
-    setBuscandoDni(true)
-    try {
-      const nombreEncontrado = await buscarNombrePorDni(valorDni)
-      if (nombreEncontrado) {
-        onChangeNombre(nombreEncontrado)
-        setQuery(nombreEncontrado)
-      } else {
-        setDniSinResultado(true)
-      }
-    } catch {
-      // si falla la consulta (red, proveedor caido, etc.) no bloqueamos el
-      // formulario: el usuario simplemente escribe el nombre a mano
-      setDniSinResultado(true)
-    }
-    setBuscandoDni(false)
-  }
+  const [buscandoDoc, setBuscandoDoc] = useState(false)
+  const [sinResultado, setSinResultado] = useState(false)
 
   const sugerencias = query.length >= 2
     ? personas.filter((p) =>
@@ -60,6 +44,28 @@ export default function BuscadorPersona({ label, dni, nombre, onChangeDni, onCha
     onChangeNombre(query.trim())
     setQuery(query.trim())
     setAbierto(false)
+  }
+
+  async function autocompletar(valor) {
+    setSinResultado(false)
+    if (nombre.trim()) return
+    if (tipoDocumento === 'DNI' && /^\d{8}$/.test(valor)) {
+      setBuscandoDoc(true)
+      try {
+        const encontrado = await buscarNombrePorDni(valor)
+        if (encontrado) { onChangeNombre(encontrado); setQuery(encontrado) }
+        else setSinResultado(true)
+      } catch { setSinResultado(true) }
+      setBuscandoDoc(false)
+    } else if (tipoDocumento === 'RUC' && /^\d{11}$/.test(valor)) {
+      setBuscandoDoc(true)
+      try {
+        const resultado = await buscarRazonSocialPorRuc(valor)
+        if (resultado?.razon_social) { onChangeNombre(resultado.razon_social); setQuery(resultado.razon_social) }
+        else setSinResultado(true)
+      } catch { setSinResultado(true) }
+      setBuscandoDoc(false)
+    }
   }
 
   return (
@@ -87,26 +93,21 @@ export default function BuscadorPersona({ label, dni, nombre, onChangeDni, onCha
           </div>
         )}
       </div>
-      <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
-        <label style={{ flex: 1 }}>DNI
-          <div style={{ position: 'relative' }}>
-            <input
-              className="input" value={dni} maxLength={8} required={required}
-              onChange={(e) => onChangeDni(e.target.value)}
-              onBlur={(e) => autocompletarPorDni(e.target.value.trim())}
-            />
-            {buscandoDni && (
-              <Loader2 size={16} className="spin" style={{ position: 'absolute', right: 10, top: 12, color: 'var(--muted)' }} />
-            )}
-          </div>
-        </label>
-        <label style={{ flex: 2 }}>Nombres y Apellidos
+      <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <TipoDocumentoInput
+          tipo={tipoDocumento} numero={dni}
+          onChangeTipo={onChangeTipoDocumento} onChangeNumero={onChangeDni}
+          onBlurNumero={autocompletar}
+          required={required && tipoDocumento !== 'Sin Documento'}
+          buscando={buscandoDoc}
+        />
+        <label>Nombres y Apellidos
           <input className="input" value={nombre} onChange={(e) => onChangeNombre(e.target.value)} required={required} />
         </label>
       </div>
-      {dniSinResultado && (
+      {sinResultado && (
         <p style={{ fontSize: 12, color: 'var(--muted)', margin: '4px 0 0' }}>
-          No encontramos un nombre para ese DNI, completalo a mano.
+          No encontramos un nombre para ese numero, completalo a mano.
         </p>
       )}
     </div>
