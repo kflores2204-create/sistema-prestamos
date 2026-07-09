@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { formatFecha } from '../lib/prestamoUtils'
-import { History, Pencil, Merge, Check, X as XIcon, UserPlus } from 'lucide-react'
+import { History, Pencil, Merge, UserPlus } from 'lucide-react'
 import PrestamoDetalleDrawer from '../components/PrestamoDetalleDrawer'
 import ClienteModalCrear from '../components/ClienteModalCrear'
 
@@ -12,9 +12,7 @@ const estadoClass = (e) => e.toLowerCase().replace(' ', '-')
 export default function Clientes() {
   const [clientes, setClientes] = useState([])
   const [busqueda, setBusqueda] = useState('')
-  const [editId, setEditId] = useState(null)
-  const [editForm, setEditForm] = useState({ dni: '', nombre: '' })
-  const [guardando, setGuardando] = useState(false)
+  const [editando, setEditando] = useState(null)
   const [historial, setHistorial] = useState(null)
   const [fusionando, setFusionando] = useState(null)
   const [fusionQuery, setFusionQuery] = useState('')
@@ -40,19 +38,12 @@ export default function Clientes() {
     return t.includes(busqueda.toLowerCase())
   })
 
-  function empezarEdicion(c) {
-    setEditId(c.id)
-    setEditForm({ dni: c.dni || '', nombre: c.nombre })
-  }
-
-  async function guardarEdicion(id) {
-    setGuardando(true)
-    const { error } = await supabase.from('clientes').update({ dni: editForm.dni || null, nombre: editForm.nombre }).eq('id', id)
-    setGuardando(false)
-    if (error) { alert('Error al guardar: ' + error.message); return }
-    setEditId(null)
-    cargar()
-    if (historial?.cliente.id === id) verHistorial({ id, dni: editForm.dni, nombre: editForm.nombre })
+  async function abrirEdicion(c) {
+    // El modal necesita TODOS los campos del cliente (celular, correo, redes,
+    // fecha, etc.) para no borrarlos al guardar; la tabla solo trae id/dni/nombre.
+    const { data, error } = await supabase.from('clientes').select('*').eq('id', c.id).single()
+    if (error) { alert('No se pudo abrir el cliente: ' + error.message); return }
+    setEditando(data)
   }
 
   function empezarFusion(c) {
@@ -113,36 +104,19 @@ export default function Clientes() {
         <tbody>
           {filtrados.map((c) => (
             <tr key={c.id}>
-              {editId === c.id ? (
-                <>
-                  <td data-label="DNI"><input className="input" value={editForm.dni} onChange={(e) => setEditForm((f) => ({ ...f, dni: e.target.value }))} maxLength={8} /></td>
-                  <td data-label="Nombre"><input className="input" value={editForm.nombre} onChange={(e) => setEditForm((f) => ({ ...f, nombre: e.target.value }))} /></td>
-                  <td data-label="" style={{ display: 'flex', gap: 6 }}>
-                    <button className="btn" style={{ padding: '6px 12px', fontSize: 12 }} onClick={() => guardarEdicion(c.id)} disabled={guardando}>
-                      <Check size={14} strokeWidth={2.6} /> Guardar
-                    </button>
-                    <button className="btn secondary" style={{ padding: '6px 12px', fontSize: 12 }} onClick={() => setEditId(null)}>
-                      <XIcon size={14} strokeWidth={2.6} /> Cancelar
-                    </button>
-                  </td>
-                </>
-              ) : (
-                <>
-                  <td data-label="DNI">{c.dni || <span style={{ color: 'var(--muted)' }}>Sin DNI</span>}</td>
-                  <td data-label="Nombre">{c.nombre}</td>
-                  <td data-label="" style={{ display: 'flex', gap: 6 }}>
-                    <button className="chip" onClick={() => verHistorial(c)}>
-                      <History size={13} strokeWidth={2.4} /> Ver historial
-                    </button>
-                    <button className="chip" onClick={() => empezarEdicion(c)}>
-                      <Pencil size={13} strokeWidth={2.4} /> Editar
-                    </button>
-                    <button className="chip" onClick={() => empezarFusion(c)}>
-                      <Merge size={13} strokeWidth={2.4} /> Fusionar
-                    </button>
-                  </td>
-                </>
-              )}
+              <td data-label="DNI">{c.dni || <span style={{ color: 'var(--muted)' }}>Sin DNI</span>}</td>
+              <td data-label="Nombre">{c.nombre}</td>
+              <td data-label="" style={{ display: 'flex', gap: 6 }}>
+                <button className="chip" onClick={() => verHistorial(c)}>
+                  <History size={13} strokeWidth={2.4} /> Ver historial
+                </button>
+                <button className="chip" onClick={() => abrirEdicion(c)}>
+                  <Pencil size={13} strokeWidth={2.4} /> Editar
+                </button>
+                <button className="chip" onClick={() => empezarFusion(c)}>
+                  <Merge size={13} strokeWidth={2.4} /> Fusionar
+                </button>
+              </td>
             </tr>
           ))}
           {filtrados.length === 0 && (
@@ -155,6 +129,18 @@ export default function Clientes() {
         <ClienteModalCrear
           onClose={() => setCreando(false)}
           onCreado={() => { setCreando(false); cargar() }}
+        />
+      )}
+
+      {editando && (
+        <ClienteModalCrear
+          clienteInicial={editando}
+          onClose={() => setEditando(null)}
+          onCreado={(c) => {
+            setEditando(null)
+            cargar()
+            if (historial?.cliente.id === c.id) verHistorial(c)
+          }}
         />
       )}
 
