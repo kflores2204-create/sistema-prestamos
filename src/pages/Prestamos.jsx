@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { Pencil, Trash2, FileText, ChevronLeft } from 'lucide-react'
+import { Pencil, Trash2, FileText, ChevronLeft, UserPlus } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { syncCuota } from '../lib/calendarSync'
 import { FRECUENCIAS, fechaCuota, montoConRecargo, tieneRecargoAplicado, estaAtrasada, formatFecha, formatFechaHora, hoyISO } from '../lib/prestamoUtils'
@@ -8,6 +8,7 @@ import { cambiarEstadoCuotaConAuditoria } from '../lib/cuotaPagos'
 import MultiSelect from '../components/MultiSelect'
 import EstadoSelect from '../components/EstadoSelect'
 import FechaInput from '../components/FechaInput'
+import ClienteModalCrear from '../components/ClienteModalCrear'
 
 const money = (n) => `S/. ${Number(n || 0).toLocaleString('es-PE', { minimumFractionDigits: 2 })}`
 const fechaCorta = formatFecha
@@ -20,6 +21,7 @@ export default function Prestamos() {
   const [prestamos, setPrestamos] = useState([])
   const [filtroEstados, setFiltroEstados] = useState(new Set(ESTADOS))
   const [busqueda, setBusqueda] = useState('')
+  const [creandoCliente, setCreandoCliente] = useState(false)
   const [ordenFecha, setOrdenFecha] = useState('desc')
   const [expanded, setExpanded] = useState(null)
   const [cuotasDetalle, setCuotasDetalle] = useState([])
@@ -188,11 +190,16 @@ export default function Prestamos() {
       </div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, flexWrap: 'wrap', gap: 12 }}>
         <h2 style={{ color: 'var(--navy)', margin: 0 }}>Prestamos {cuenta}</h2>
-        <input
-          className="input search-box"
-          placeholder="Buscar por nombre, DNI o codigo..."
-          value={busqueda} onChange={(e) => setBusqueda(e.target.value)}
-        />
+        <div style={{ display: 'flex', gap: 8 }}>
+          <input
+            className="input search-box"
+            placeholder="Buscar por nombre, DNI o codigo..."
+            value={busqueda} onChange={(e) => setBusqueda(e.target.value)}
+          />
+          <button className="btn" style={{ flexShrink: 0 }} onClick={() => setCreandoCliente(true)} title="Crear cliente nuevo">
+            <UserPlus size={16} strokeWidth={2.4} />
+          </button>
+        </div>
       </div>
 
       <div className="search-box" style={{ marginBottom: 16 }}>
@@ -376,6 +383,10 @@ export default function Prestamos() {
             )}
           </div>
         </>
+      )}
+
+      {creandoCliente && (
+        <ClienteModalCrear onClose={() => setCreandoCliente(false)} onCreado={() => setCreandoCliente(false)} />
       )}
     </div>
   )
