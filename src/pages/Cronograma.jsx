@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 import { montoConRecargo, tieneRecargoAplicado, formatFecha } from '../lib/prestamoUtils'
 import { Printer, ChevronLeft } from 'lucide-react'
 import MultiSelect from '../components/MultiSelect'
+import BuscadorFiltro from '../components/BuscadorFiltro'
 
 const money = (n) => `S/. ${Number(n || 0).toLocaleString('es-PE', { minimumFractionDigits: 2 })}`
 const fecha = formatFecha
@@ -144,10 +145,15 @@ export default function Cronograma() {
       <p style={{ color: 'var(--muted)', marginTop: -8 }}>
         Todos los prestamos. Busca por nombre, DNI o codigo, filtra por cuenta, o elegi uno de la lista.
       </p>
-      <input
-        className="input search-box" style={{ marginBottom: 12 }}
+      <BuscadorFiltro
+        value={query}
+        onChange={setQuery}
         placeholder="Buscar por nombre, DNI o codigo..."
-        value={query} onChange={(e) => setQuery(e.target.value)}
+        wrapperClassName="search-box"
+        wrapperStyle={{ marginBottom: 12 }}
+        sugerencias={[...new Map(
+          opciones.map((o) => [`${o.cliente}__${o.cliente_dni || ''}`, { key: `${o.cliente}__${o.cliente_dni || ''}`, texto: o.cliente, etiqueta: o.cliente_dni || '' }])
+        ).values()]}
       />
       <div className="search-box" style={{ marginBottom: 16 }}>
         <MultiSelect
