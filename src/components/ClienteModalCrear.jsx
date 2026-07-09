@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import { buscarNombrePorDni, buscarRazonSocialPorRuc } from '../lib/identidad'
 import Modal from './Modal'
@@ -41,30 +41,36 @@ function formDesdeCliente(c) {
 }
 
 /**
- * Ventana flotante para crear (o editar, si el documento ya existe) un
- * cliente. Se usa en dos lugares:
- *  - Clientes.jsx (boton "Nuevo cliente")
- *  - BuscadorPersona.jsx (cuando buscas a alguien y no existe)
+ * Ventana flotante para crear O editar un cliente. Se usa en:
+ *  - Clientes.jsx (boton "Nuevo cliente" -> crear; boton "Editar" -> editar)
+ *  - BuscadorPersona.jsx (cuando buscas a alguien y no existe -> crear)
+ *  - (ya no en Prestamos.jsx: ese boton se retiro)
  *
  * Comportamiento:
- *  - Si el buscador ya traia un numero (DNI/RUC), al abrir el modal se enruta
- *    al campo de documento y se dispara la deteccion automatica al instante.
- *  - En cuanto el numero de documento llega a la longitud esperada (8 DNI,
- *    11 RUC) se busca automaticamente, SIN esperar a salir del campo.
- *  - Si ese numero YA es de un cliente existente, el formulario se llena con
- *    sus datos reales y pasa a modo "Editar cliente" (avisa con un banner).
- *  - Si no existe, se autocompleta el nombre via RENIEC/SUNAT (Decolecta) y
- *    se sigue en modo "Nuevo cliente".
+ *  - CREAR: si el buscador traia un numero (DNI/RUC), al abrir se enruta al
+ *    campo de documento y se dispara la deteccion automatica al instante.
+ *  - EDITAR: se abre precargado con el cliente (clienteInicial). Si cambias el
+ *    numero de documento a un DNI/RUC valido, se vuelve a consultar RENIEC/SUNAT
+ *    y se refrescan los datos; si ese documento pertenece a OTRO cliente, avisa
+ *    y no secuestra la edicion.
+ *  - En cuanto el numero llega a la longitud esperada (8 DNI, 11 RUC) se busca
+ *    automaticamente, sin esperar a salir del campo.
+ *  - Al crear, si el numero YA es de un cliente existente, el formulario pasa a
+ *    editar ese cliente (avisa con un banner).
  *
  * Props:
- *  nombreInicial: string (opcional, lo que ya se escribio en la busqueda:
- *                 puede ser un nombre O un numero de documento)
+ *  nombreInicial: string (opcional, lo escrito en la busqueda: nombre O documento)
+ *  clienteInicial: objeto cliente completo (opcional) -> abre en modo EDITAR
  *  onClose: () => void
  *  onCreado: (cliente) => void  -> se llama con la fila creada o actualizada
  */
-export default function ClienteModalCrear({ nombreInicial, onClose, onCreado }) {
-  const [form, setForm] = useState(() => formVacio(nombreInicial))
-  const [existenteId, setExistenteId] = useState(null)
+export default function ClienteModalCrear({ nombreInicial, clienteInicial, onClose, onCreado }) {
+  const esEdicion = !!clienteInicial
+  const [form, setForm] = useState(() => esEdicion ? formDesdeCliente(clienteInicial) : formVacio(nombreInicial))
+  const [existenteId, setExistenteId] = useState(clienteInicial?.id || null)
+  // Id del registro que estamos editando (estable entre renders): sirve para no
+  // confundir "el mismo cliente" con "otro cliente que ya tiene ese documento".
+  const registroId = useRef(clienteInicial?.id || null)
   const [aviso, setAviso] = useState('')
   const [tab, setTab] = useState('principales')
   const [buscando, setBuscando] = useState(false)
@@ -76,23 +82,33 @@ export default function ClienteModalCrear({ nombreInicial, onClose, onCreado }) 
     setForm((f) => ({ ...f, dni: valor }))
     setSinResultado(false)
     setAviso('')
-    setExistenteId(null)
+    // Al editar SIEMPRE seguimos sobre el mismo registro; solo al crear
+    // olvidamos cualquier "cliente existente" detectado en un intento previo.
+    if (!esEdicion) setExistenteId(null)
 
     const esDni = form.tipoDocumento === 'DNI' && /^\d{8}$/.test(valor)
     const esRuc = form.tipoDocumento === 'RUC' && /^\d{11}$/.test(valor)
     if (!esDni && !esRuc) return
 
-    // 1. Primero, revisamos si ese numero ya es de un cliente existente.
+    // 1. Revisamos si ese numero ya pertenece a algun cliente.
     const { data: existente } = await supabase.from('clientes').select('*').eq('dni', valor).maybeSingle()
-    if (existente) {
-      setForm(formDesdeCliente(existente))
-      setExistenteId(existente.id)
-      setAviso('El cliente ya existe en el sistema')
+    if (existente && existente.id !== registroId.current) {
+      if (esEdicion) {
+        // Editando: el documento es de OTRO cliente. Avisamos, no secuestramos.
+        setAviso('Ese documento ya pertenece a otro cliente.')
+      } else {
+        // Creando: el documento ya existe -> pasamos a editar ese cliente.
+        setForm(formDesdeCliente(existente))
+        setExistenteId(existente.id)
+        registroId.current = existente.id
+        setAviso('El cliente ya existe en el sistema')
+      }
       return
     }
 
-    // 2. Si no existe, autocompletamos el nombre por DNI/RUC (servicio externo).
-    if (form.nombre.trim()) return
+    // 2. Autocompletamos el nombre por DNI/RUC (servicio externo).
+    //    Al crear respetamos un nombre ya escrito; al editar siempre refrescamos.
+    if (!esEdicion && form.nombre.trim()) return
     setBuscando(true)
     try {
       if (esDni) {
@@ -108,10 +124,11 @@ export default function ClienteModalCrear({ nombreInicial, onClose, onCreado }) 
     setBuscando(false)
   }
 
-  // Al abrir el modal ya con un numero (venido del buscador), disparamos la
-  // misma deteccion/autocompletado que si se hubiera tecleado a mano.
+  // Al ABRIR CREANDO ya con un numero (venido del buscador), disparamos la
+  // misma deteccion/autocompletado. Al editar NO auto-consultamos en la apertura
+  // (respetamos los datos guardados hasta que el usuario cambie el documento).
   useEffect(() => {
-    if (form.dni && (form.tipoDocumento === 'DNI' || form.tipoDocumento === 'RUC')) {
+    if (!esEdicion && form.dni && (form.tipoDocumento === 'DNI' || form.tipoDocumento === 'RUC')) {
       manejarNumero(form.dni)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
