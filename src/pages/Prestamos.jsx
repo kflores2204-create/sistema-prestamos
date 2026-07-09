@@ -6,6 +6,7 @@ import { syncCuota } from '../lib/calendarSync'
 import { FRECUENCIAS, fechaCuota, montoConRecargo, tieneRecargoAplicado, estaAtrasada, formatFecha, formatFechaHora, hoyISO } from '../lib/prestamoUtils'
 import { cambiarEstadoCuotaConAuditoria } from '../lib/cuotaPagos'
 import MultiSelect from '../components/MultiSelect'
+import BuscadorFiltro from '../components/BuscadorFiltro'
 import EstadoSelect from '../components/EstadoSelect'
 import FechaInput from '../components/FechaInput'
 
@@ -188,10 +189,14 @@ export default function Prestamos() {
       </div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, flexWrap: 'wrap', gap: 12 }}>
         <h2 style={{ color: 'var(--navy)', margin: 0 }}>Prestamos {cuenta}</h2>
-        <input
-          className="input search-box"
+        <BuscadorFiltro
+          value={busqueda}
+          onChange={setBusqueda}
           placeholder="Buscar por nombre, DNI o codigo..."
-          value={busqueda} onChange={(e) => setBusqueda(e.target.value)}
+          wrapperClassName="search-box"
+          sugerencias={[...new Map(
+            prestamos.map((p) => [p.cliente_id, { key: p.cliente_id, texto: p.cliente, etiqueta: p.cliente_dni || '' }])
+          ).values()]}
         />
       </div>
 
