@@ -34,7 +34,7 @@ export default function NuevoPrestamo() {
   const [estado, setEstado] = useState({ cargando: false, mensaje: '', error: false })
 
   useEffect(() => {
-    supabase.from('clientes').select('id, dni, nombre').order('nombre').then(({ data }) => setPersonas(data || []))
+    supabase.from('clientes').select('id, dni, nombre, tipo_documento').order('nombre').then(({ data }) => setPersonas(data || []))
     supabase.from('cuentas').select('id, nombre, prefijo').order('nombre').then(({ data }) => {
       setCuentasDisponibles(data || [])
       if (!cuentaPreseleccionada && data?.length) setCuenta(data[0].nombre)
