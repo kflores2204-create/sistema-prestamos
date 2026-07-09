@@ -6,8 +6,8 @@ import ClienteModalCrear from './ClienteModalCrear'
  * Buscador de cliente (persona): UN SOLO campo de busqueda que se reutiliza
  * tanto para BUSCAR como para CREAR (igual que el sistema de referencia: no
  * hay boton "crear cliente" aparte). Al escribir un nombre o un documento:
- *   - Aparece SIEMPRE como primera opcion "Crear cliente ..." (con el texto
- *     escrito), y debajo las coincidencias existentes (documento + nombre).
+ *   - Aparece SIEMPRE como primera opcion "Crear cliente ..." (incluso con un
+ *     solo caracter o un espacio), y debajo las coincidencias existentes.
  *   - Si lo escrito es un numero, la opcion Crear lo trata como DOCUMENTO;
  *     si es texto, como NOMBRE. El modal recibe ese valor y lo enruta al
  *     campo correcto (numero de DNI/RUC vs. Nombres), autocompletando por
@@ -15,7 +15,7 @@ import ClienteModalCrear from './ClienteModalCrear'
  *
  * Este es el UNICO tipo de campo que debe usarse cuando la accion es "elegir
  * o crear un cliente" (a diferencia de los buscadores de LISTA como en
- * Prestamos/Clientes/Cronograma, que solo filtran una tabla existente).
+ * Prestamos/Clientes/Cronograma/Dashboard, que solo filtran una tabla).
  *
  * Props:
  *  label: string
@@ -35,11 +35,17 @@ export default function BuscadorPersona({
   // Si lo escrito son solo digitos, la opcion Crear lo tratara como documento.
   const esNumero = /^\d+$/.test(q)
 
+  // Las coincidencias se buscan a partir de 2 caracteres (para no listar todo),
+  // pero la opcion "Crear" aparece con cualquier contenido, incluso un espacio.
   const sugerencias = q.length >= 2
     ? personas.filter((p) =>
         (p.dni || '').includes(q) || p.nombre.toLowerCase().includes(q.toLowerCase())
       ).slice(0, 6)
     : []
+
+  // Se abre el desplegable en cuanto el campo tiene ALGO escrito (un espacio
+  // basta), igual que el sistema de referencia.
+  const mostrarDropdown = abierto && query.length >= 1
 
   function elegir(p) {
     onChangeDni(p.dni || '')
@@ -68,13 +74,15 @@ export default function BuscadorPersona({
             onBlur={() => setTimeout(() => setAbierto(false), 150)}
           />
         </label>
-        {abierto && q.length >= 2 && (
+        {mostrarDropdown && (
           <div className="autocomplete-dropdown">
             <div className="autocomplete-crear" onMouseDown={() => setCreando(true)}>
               <Plus size={14} strokeWidth={2.6} />
-              {esNumero
-                ? <>Crear cliente con documento "{q}"</>
-                : <>Crear cliente nuevo: "{q}"</>}
+              {q.length === 0
+                ? <>Crear cliente nuevo</>
+                : esNumero
+                  ? <>Crear cliente con documento "{q}"</>
+                  : <>Crear cliente nuevo: "{q}"</>}
             </div>
             {sugerencias.map((p) => (
               <div key={p.id} className="autocomplete-item" onMouseDown={() => elegir(p)}>
@@ -82,6 +90,11 @@ export default function BuscadorPersona({
                 <span>{p.nombre}</span>
               </div>
             ))}
+            {q.length >= 2 && sugerencias.length === 0 && (
+              <div className="autocomplete-item" style={{ color: 'var(--muted)', cursor: 'default' }}>
+                Sin resultados
+              </div>
+            )}
           </div>
         )}
       </div>
