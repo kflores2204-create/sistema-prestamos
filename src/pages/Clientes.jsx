@@ -3,9 +3,7 @@ import { supabase } from '../lib/supabase'
 import { formatFecha } from '../lib/prestamoUtils'
 import { History, Pencil, Merge, Check, X as XIcon, UserPlus } from 'lucide-react'
 import PrestamoDetalleDrawer from '../components/PrestamoDetalleDrawer'
-import { buscarNombrePorDni, buscarRazonSocialPorRuc } from '../lib/identidad'
-import TipoDocumentoInput from '../components/TipoDocumentoInput'
-import FechaInput from '../components/FechaInput'
+import ClienteModalCrear from '../components/ClienteModalCrear'
 
 const money = (n) => `S/. ${Number(n || 0).toLocaleString('es-PE', { minimumFractionDigits: 2 })}`
 const fechaCorta = formatFecha
@@ -24,17 +22,7 @@ export default function Clientes() {
   const [fusionando2, setFusionando2] = useState(false)
 
   const [creando, setCreando] = useState(false)
-  const [creandoTab, setCreandoTab] = useState('principales')
   const [prestamoDrawerId, setPrestamoDrawerId] = useState(null)
-  const NUEVO_FORM_VACIO = {
-    dni: '', nombre: '', tipoDocumento: 'DNI',
-    fechaNacimiento: '', genero: '', facebook: '', instagram: '', tiktok: '', comentario: '',
-  }
-  const [nuevoForm, setNuevoForm] = useState(NUEVO_FORM_VACIO)
-  const [creandoGuardando, setCreandoGuardando] = useState(false)
-  const [creandoError, setCreandoError] = useState('')
-  const [buscandoDocNuevo, setBuscandoDocNuevo] = useState(false)
-  const [sinResultadoNuevo, setSinResultadoNuevo] = useState(false)
 
   async function cargar() {
     const { data: cl } = await supabase.from('clientes').select('id, dni, nombre').order('nombre')
@@ -65,64 +53,6 @@ export default function Clientes() {
     setEditId(null)
     cargar()
     if (historial?.cliente.id === id) verHistorial({ id, dni: editForm.dni, nombre: editForm.nombre })
-  }
-
-  function abrirNuevoCliente() {
-    setNuevoForm(NUEVO_FORM_VACIO)
-    setCreandoTab('principales')
-    setCreandoError('')
-    setSinResultadoNuevo(false)
-    setCreando(true)
-  }
-
-  async function autocompletarNuevo(valor) {
-    setSinResultadoNuevo(false)
-    if (nuevoForm.nombre.trim()) return
-    if (nuevoForm.tipoDocumento === 'DNI' && /^\d{8}$/.test(valor)) {
-      setBuscandoDocNuevo(true)
-      try {
-        const encontrado = await buscarNombrePorDni(valor)
-        if (encontrado) setNuevoForm((f) => ({ ...f, nombre: encontrado }))
-        else setSinResultadoNuevo(true)
-      } catch { setSinResultadoNuevo(true) }
-      setBuscandoDocNuevo(false)
-    } else if (nuevoForm.tipoDocumento === 'RUC' && /^\d{11}$/.test(valor)) {
-      setBuscandoDocNuevo(true)
-      try {
-        const resultado = await buscarRazonSocialPorRuc(valor)
-        if (resultado?.razon_social) setNuevoForm((f) => ({ ...f, nombre: resultado.razon_social }))
-        else setSinResultadoNuevo(true)
-      } catch { setSinResultadoNuevo(true) }
-      setBuscandoDocNuevo(false)
-    }
-  }
-
-  async function crearCliente(e) {
-    e.preventDefault()
-    const nombre = nuevoForm.nombre.trim()
-    if (!nombre) { setCreandoError('El nombre es obligatorio.'); return }
-    setCreandoGuardando(true)
-    setCreandoError('')
-    const { error } = await supabase.from('clientes').insert({
-      dni: nuevoForm.tipoDocumento === 'Sin Documento' ? null : (nuevoForm.dni.trim() || null),
-      nombre,
-      tipo_documento: nuevoForm.tipoDocumento,
-      fecha_nacimiento: nuevoForm.fechaNacimiento || null,
-      genero: nuevoForm.genero || null,
-      facebook: nuevoForm.facebook.trim() || null,
-      instagram: nuevoForm.instagram.trim() || null,
-      tiktok: nuevoForm.tiktok.trim() || null,
-      comentario: nuevoForm.comentario.trim() || null,
-    })
-    setCreandoGuardando(false)
-    if (error) {
-      setCreandoError(
-        error.code === '23505' ? 'Ya existe un cliente con ese DNI.' : ('Error al guardar: ' + error.message)
-      )
-      return
-    }
-    setCreando(false)
-    cargar()
   }
 
   function empezarFusion(c) {
@@ -173,7 +103,7 @@ export default function Clientes() {
           placeholder="Buscar por nombre, DNI o codigo de prestamo..." value={busqueda}
           onChange={(e) => setBusqueda(e.target.value)}
         />
-        <button className="btn" onClick={abrirNuevoCliente}>
+        <button className="btn" onClick={() => setCreando(true)}>
           <UserPlus size={15} strokeWidth={2.4} /> Nuevo cliente
         </button>
       </div>
@@ -222,97 +152,10 @@ export default function Clientes() {
       </table>
 
       {creando && (
-        <>
-          <div className="drawer-backdrop" onClick={() => setCreando(false)} />
-          <div className="drawer">
-            <div className="drawer-header">
-              <div>
-                <h3 style={{ margin: 0, color: 'var(--navy)' }}>Nuevo cliente</h3>
-                <p style={{ margin: '2px 0 0', color: 'var(--muted)', fontSize: 13 }}>Agregar un cliente a la base de datos</p>
-              </div>
-              <button className="drawer-close" onClick={() => setCreando(false)}>✕</button>
-            </div>
-
-            <form onSubmit={crearCliente} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-              <div style={{ display: 'flex', borderBottom: '1px solid var(--border)', marginBottom: 4 }}>
-                <button
-                  type="button" onClick={() => setCreandoTab('principales')}
-                  style={{
-                    flex: 1, padding: '10px 0', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 700,
-                    borderBottom: creandoTab === 'principales' ? '2px solid var(--navy)' : '2px solid transparent',
-                    color: creandoTab === 'principales' ? 'var(--navy)' : 'var(--muted)',
-                  }}
-                >
-                  Principales
-                </button>
-                <button
-                  type="button" onClick={() => setCreandoTab('adicionales')}
-                  style={{
-                    flex: 1, padding: '10px 0', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 700,
-                    borderBottom: creandoTab === 'adicionales' ? '2px solid var(--navy)' : '2px solid transparent',
-                    color: creandoTab === 'adicionales' ? 'var(--navy)' : 'var(--muted)',
-                  }}
-                >
-                  Adicionales
-                </button>
-              </div>
-
-              {creandoTab === 'principales' ? (
-                <>
-                  <TipoDocumentoInput
-                    tipo={nuevoForm.tipoDocumento} numero={nuevoForm.dni}
-                    onChangeTipo={(t) => setNuevoForm((f) => ({ ...f, tipoDocumento: t, dni: t === 'Sin Documento' ? '' : f.dni }))}
-                    onChangeNumero={(v) => setNuevoForm((f) => ({ ...f, dni: v }))}
-                    onBlurNumero={autocompletarNuevo}
-                    buscando={buscandoDocNuevo}
-                  />
-                  <label>Nombres y Apellidos
-                    <input className="input" required value={nuevoForm.nombre} onChange={(e) => setNuevoForm((f) => ({ ...f, nombre: e.target.value }))} />
-                  </label>
-                  {sinResultadoNuevo && (
-                    <p style={{ fontSize: 12, color: 'var(--muted)', margin: 0 }}>
-                      No encontramos datos para ese numero, completalo a mano.
-                    </p>
-                  )}
-                </>
-              ) : (
-                <>
-                  <label>Fecha de nacimiento (opcional)
-                    <FechaInput value={nuevoForm.fechaNacimiento} onChange={(v) => setNuevoForm((f) => ({ ...f, fechaNacimiento: v }))} />
-                  </label>
-                  <label>Genero (opcional)
-                    <select className="input" value={nuevoForm.genero} onChange={(e) => setNuevoForm((f) => ({ ...f, genero: e.target.value }))}>
-                      <option value="">No especificar</option>
-                      <option value="Masculino">Masculino</option>
-                      <option value="Femenino">Femenino</option>
-                      <option value="Otro">Otro</option>
-                    </select>
-                  </label>
-                  <label>Facebook (opcional)
-                    <input className="input" placeholder="https://facebook.com/tu-perfil" value={nuevoForm.facebook} onChange={(e) => setNuevoForm((f) => ({ ...f, facebook: e.target.value }))} />
-                  </label>
-                  <label>Instagram (opcional)
-                    <input className="input" placeholder="https://instagram.com/tu-perfil" value={nuevoForm.instagram} onChange={(e) => setNuevoForm((f) => ({ ...f, instagram: e.target.value }))} />
-                  </label>
-                  <label>TikTok (opcional)
-                    <input className="input" placeholder="https://tiktok.com/@tu-perfil" value={nuevoForm.tiktok} onChange={(e) => setNuevoForm((f) => ({ ...f, tiktok: e.target.value }))} />
-                  </label>
-                  <label>Comentarios (opcional)
-                    <textarea className="input" rows={3} value={nuevoForm.comentario} onChange={(e) => setNuevoForm((f) => ({ ...f, comentario: e.target.value }))} />
-                  </label>
-                </>
-              )}
-
-              {creandoError && <p style={{ color: 'var(--red)', fontSize: 13, margin: 0 }}>{creandoError}</p>}
-              <div style={{ display: 'flex', gap: 8 }}>
-                <button className="btn" type="submit" disabled={creandoGuardando}>
-                  {creandoGuardando ? 'Guardando...' : 'Crear cliente'}
-                </button>
-                <button className="btn secondary" type="button" onClick={() => setCreando(false)}>Cancelar</button>
-              </div>
-            </form>
-          </div>
-        </>
+        <ClienteModalCrear
+          onClose={() => setCreando(false)}
+          onCreado={() => { setCreando(false); cargar() }}
+        />
       )}
 
       {fusionando && (
