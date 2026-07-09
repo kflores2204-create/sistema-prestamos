@@ -7,6 +7,7 @@ import { supabase } from '../lib/supabase'
 import { hoyISO, estaAtrasada } from '../lib/prestamoUtils'
 import MultiSelect from '../components/MultiSelect'
 import FechaInput from '../components/FechaInput'
+import BuscadorFiltro from '../components/BuscadorFiltro'
 
 const money = (n) => `S/. ${Number(n || 0).toLocaleString('es-PE', { minimumFractionDigits: 2 })}`
 const moneyCorto = (n) => {
@@ -246,7 +247,14 @@ export default function Dashboard() {
           />
         </div>
         <label>Cliente (nombre o DNI)
-          <input className="input" placeholder="Buscar cliente..." value={clienteQuery} onChange={(e) => setClienteQuery(e.target.value)} />
+          <BuscadorFiltro
+            value={clienteQuery}
+            onChange={setClienteQuery}
+            placeholder="Buscar cliente..."
+            sugerencias={[...new Map(
+              prestamos.map((p) => [p.cliente_id, { key: p.cliente_id, texto: p.cliente, etiqueta: p.cliente_dni || '' }])
+            ).values()]}
+          />
         </label>
         <div>
           <span className="field-label" style={{ visibility: 'hidden' }}>Limpiar</span>
