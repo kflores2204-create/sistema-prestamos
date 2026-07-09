@@ -3,10 +3,15 @@ import { Plus } from 'lucide-react'
 import ClienteModalCrear from './ClienteModalCrear'
 
 /**
- * Buscador de cliente (persona): UN SOLO campo de busqueda. Si la persona ya
- * existe, se selecciona de la lista de sugerencias. Si no existe, se abre una
- * ventana flotante (modal) para crearla, con todos sus datos - no hay campos
- * de DNI/Nombre sueltos aparte del buscador, para no duplicar la interfaz.
+ * Buscador de cliente (persona): UN SOLO campo de busqueda que se reutiliza
+ * tanto para BUSCAR como para CREAR (igual que el sistema de referencia: no
+ * hay boton "crear cliente" aparte). Al escribir un nombre o un documento:
+ *   - Aparece SIEMPRE como primera opcion "Crear cliente ..." (con el texto
+ *     escrito), y debajo las coincidencias existentes (documento + nombre).
+ *   - Si lo escrito es un numero, la opcion Crear lo trata como DOCUMENTO;
+ *     si es texto, como NOMBRE. El modal recibe ese valor y lo enruta al
+ *     campo correcto (numero de DNI/RUC vs. Nombres), autocompletando por
+ *     RENIEC/SUNAT cuando aplica.
  *
  * Este es el UNICO tipo de campo que debe usarse cuando la accion es "elegir
  * o crear un cliente" (a diferencia de los buscadores de LISTA como en
@@ -26,9 +31,13 @@ export default function BuscadorPersona({
   const [abierto, setAbierto] = useState(false)
   const [creando, setCreando] = useState(false)
 
-  const sugerencias = query.length >= 2
+  const q = query.trim()
+  // Si lo escrito son solo digitos, la opcion Crear lo tratara como documento.
+  const esNumero = /^\d+$/.test(q)
+
+  const sugerencias = q.length >= 2
     ? personas.filter((p) =>
-        (p.dni || '').includes(query) || p.nombre.toLowerCase().includes(query.toLowerCase())
+        (p.dni || '').includes(q) || p.nombre.toLowerCase().includes(q.toLowerCase())
       ).slice(0, 6)
     : []
 
@@ -53,16 +62,19 @@ export default function BuscadorPersona({
       <div className="buscador-persona">
         <label>{label}
           <input
-            className="input" placeholder="Buscar por DNI o nombre..." value={query} required={required && !nombre}
+            className="input" placeholder="Busca por nombre o documento..." value={query} required={required && !nombre}
             onChange={(e) => { setQuery(e.target.value); setAbierto(true); if (nombre) { onChangeNombre(''); onChangeDni('') } }}
             onFocus={() => setAbierto(true)}
             onBlur={() => setTimeout(() => setAbierto(false), 150)}
           />
         </label>
-        {abierto && query.length >= 2 && (
+        {abierto && q.length >= 2 && (
           <div className="autocomplete-dropdown">
             <div className="autocomplete-crear" onMouseDown={() => setCreando(true)}>
-              <Plus size={14} strokeWidth={2.6} /> Crear cliente nuevo: "{query.trim()}"
+              <Plus size={14} strokeWidth={2.6} />
+              {esNumero
+                ? <>Crear cliente con documento "{q}"</>
+                : <>Crear cliente nuevo: "{q}"</>}
             </div>
             {sugerencias.map((p) => (
               <div key={p.id} className="autocomplete-item" onMouseDown={() => elegir(p)}>
@@ -75,7 +87,7 @@ export default function BuscadorPersona({
       </div>
 
       {creando && (
-        <ClienteModalCrear nombreInicial={query} onClose={() => setCreando(false)} onCreado={onCreado} />
+        <ClienteModalCrear nombreInicial={q} onClose={() => setCreando(false)} onCreado={onCreado} />
       )}
     </div>
   )
