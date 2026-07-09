@@ -390,6 +390,23 @@ input[type="date"].input::-webkit-calendar-picker-indicator:hover { opacity: 1; 
 
 .filtros-grid > * { min-width: 0; }
 
+.modal-backdrop {
+  position: fixed; inset: 0; background: rgba(10,0,77,0.4); z-index: 60;
+  display: flex; align-items: center; justify-content: center; padding: 20px;
+}
+.modal-card {
+  background: white; border-radius: 16px; padding: 28px; width: 100%;
+  max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+}
+.modal-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 18px; gap: 12px; }
+
+.tabs-simple { display: flex; border-bottom: 1px solid var(--border); margin-bottom: 14px; }
+.tabs-simple button {
+  flex: 1; padding: 10px 0; background: none; border: none; cursor: pointer; font-weight: 700;
+  border-bottom: 2px solid transparent; color: var(--muted); font-size: 14px;
+}
+.tabs-simple button.activo { border-bottom-color: var(--navy); color: var(--navy); }
+
 @media (max-width: 640px) {
   .cronograma-print { padding: 20px 16px; }
   .cronograma-header { flex-wrap: wrap; gap: 14px; }
