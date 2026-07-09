@@ -1,21 +1,22 @@
 import { useState } from 'react'
 import { Plus } from 'lucide-react'
-import { buscarNombrePorDni, buscarRazonSocialPorRuc } from '../lib/identidad'
-import TipoDocumentoInput from './TipoDocumentoInput'
+import ClienteModalCrear from './ClienteModalCrear'
 
 /**
- * Buscador de cliente (persona) reutilizable, con autocompletado y opcion de
- * crear un cliente nuevo si no existe. Este es el UNICO tipo de campo que
- * debe usarse cuando la accion es "elegir o crear un cliente" (a diferencia
- * de los buscadores de LISTA como en Prestamos/Clientes/Cronograma, que solo
- * filtran una tabla existente y no deben mezclarse con creacion de clientes).
+ * Buscador de cliente (persona): UN SOLO campo de busqueda. Si la persona ya
+ * existe, se selecciona de la lista de sugerencias. Si no existe, se abre una
+ * ventana flotante (modal) para crearla, con todos sus datos - no hay campos
+ * de DNI/Nombre sueltos aparte del buscador, para no duplicar la interfaz.
+ *
+ * Este es el UNICO tipo de campo que debe usarse cuando la accion es "elegir
+ * o crear un cliente" (a diferencia de los buscadores de LISTA como en
+ * Prestamos/Clientes/Cronograma, que solo filtran una tabla existente).
  *
  * Props:
  *  label: string
- *  dni, nombre: string (valores actuales del numero de documento y el nombre)
- *  tipoDocumento: string ('DNI'|'RUC'|'Pasaporte'|'Carne Extranjeria'|'Sin Documento')
+ *  dni, nombre, tipoDocumento: valores actuales de la persona seleccionada
  *  onChangeDni, onChangeNombre, onChangeTipoDocumento: (string) => void
- *  personas: [{ id, dni, nombre }]  -> lista completa de clientes para autocompletar
+ *  personas: [{ id, dni, nombre, tipo_documento }]  -> lista completa para autocompletar
  *  required: boolean
  */
 export default function BuscadorPersona({
@@ -23,8 +24,7 @@ export default function BuscadorPersona({
 }) {
   const [query, setQuery] = useState(nombre || '')
   const [abierto, setAbierto] = useState(false)
-  const [buscandoDoc, setBuscandoDoc] = useState(false)
-  const [sinResultado, setSinResultado] = useState(false)
+  const [creando, setCreando] = useState(false)
 
   const sugerencias = query.length >= 2
     ? personas.filter((p) =>
@@ -35,37 +35,17 @@ export default function BuscadorPersona({
   function elegir(p) {
     onChangeDni(p.dni || '')
     onChangeNombre(p.nombre)
+    onChangeTipoDocumento?.(p.tipo_documento || 'DNI')
     setQuery(p.nombre)
     setAbierto(false)
   }
 
-  function crearNuevo() {
-    onChangeDni('')
-    onChangeNombre(query.trim())
-    setQuery(query.trim())
-    setAbierto(false)
-  }
-
-  async function autocompletar(valor) {
-    setSinResultado(false)
-    if (nombre.trim()) return
-    if (tipoDocumento === 'DNI' && /^\d{8}$/.test(valor)) {
-      setBuscandoDoc(true)
-      try {
-        const encontrado = await buscarNombrePorDni(valor)
-        if (encontrado) { onChangeNombre(encontrado); setQuery(encontrado) }
-        else setSinResultado(true)
-      } catch { setSinResultado(true) }
-      setBuscandoDoc(false)
-    } else if (tipoDocumento === 'RUC' && /^\d{11}$/.test(valor)) {
-      setBuscandoDoc(true)
-      try {
-        const resultado = await buscarRazonSocialPorRuc(valor)
-        if (resultado?.razon_social) { onChangeNombre(resultado.razon_social); setQuery(resultado.razon_social) }
-        else setSinResultado(true)
-      } catch { setSinResultado(true) }
-      setBuscandoDoc(false)
-    }
+  function onCreado(cliente) {
+    onChangeDni(cliente.dni || '')
+    onChangeNombre(cliente.nombre)
+    onChangeTipoDocumento?.(cliente.tipo_documento || 'DNI')
+    setQuery(cliente.nombre)
+    setCreando(false)
   }
 
   return (
@@ -73,15 +53,15 @@ export default function BuscadorPersona({
       <div className="buscador-persona">
         <label>{label}
           <input
-            className="input" placeholder="Buscar por DNI o nombre..." value={query}
-            onChange={(e) => { setQuery(e.target.value); setAbierto(true) }}
+            className="input" placeholder="Buscar por DNI o nombre..." value={query} required={required && !nombre}
+            onChange={(e) => { setQuery(e.target.value); setAbierto(true); if (nombre) { onChangeNombre(''); onChangeDni('') } }}
             onFocus={() => setAbierto(true)}
             onBlur={() => setTimeout(() => setAbierto(false), 150)}
           />
         </label>
         {abierto && query.length >= 2 && (
           <div className="autocomplete-dropdown">
-            <div className="autocomplete-crear" onMouseDown={crearNuevo}>
+            <div className="autocomplete-crear" onMouseDown={() => setCreando(true)}>
               <Plus size={14} strokeWidth={2.6} /> Crear cliente nuevo: "{query.trim()}"
             </div>
             {sugerencias.map((p) => (
@@ -93,22 +73,9 @@ export default function BuscadorPersona({
           </div>
         )}
       </div>
-      <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 8 }}>
-        <TipoDocumentoInput
-          tipo={tipoDocumento} numero={dni}
-          onChangeTipo={onChangeTipoDocumento} onChangeNumero={onChangeDni}
-          onBlurNumero={autocompletar}
-          required={required && tipoDocumento !== 'Sin Documento'}
-          buscando={buscandoDoc}
-        />
-        <label>Nombres y Apellidos
-          <input className="input" value={nombre} onChange={(e) => onChangeNombre(e.target.value)} required={required} />
-        </label>
-      </div>
-      {sinResultado && (
-        <p style={{ fontSize: 12, color: 'var(--muted)', margin: '4px 0 0' }}>
-          No encontramos un nombre para ese numero, completalo a mano.
-        </p>
+
+      {creando && (
+        <ClienteModalCrear nombreInicial={query} onClose={() => setCreando(false)} onCreado={onCreado} />
       )}
     </div>
   )
