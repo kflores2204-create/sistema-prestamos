@@ -23,10 +23,12 @@ export default function NuevoPrestamo() {
 
   const [clienteDni, setClienteDni] = useState('')
   const [clienteNombre, setClienteNombre] = useState('')
+  const [clienteTipoDoc, setClienteTipoDoc] = useState('DNI')
 
   const [tieneAval, setTieneAval] = useState(false)
   const [avalDni, setAvalDni] = useState('')
   const [avalNombre, setAvalNombre] = useState('')
+  const [avalTipoDoc, setAvalTipoDoc] = useState('DNI')
 
   const [personas, setPersonas] = useState([])
   const [estado, setEstado] = useState({ cargando: false, mensaje: '', error: false })
@@ -46,7 +48,7 @@ export default function NuevoPrestamo() {
     return `PR-${prefijo}-${String(n).padStart(4, '0')}`
   }
 
-  async function resolverPersona(dni, nombre) {
+  async function resolverPersona(dni, nombre, tipoDocumento) {
     if (dni) {
       const { data: porDni } = await supabase.from('clientes').select('id').eq('dni', dni).maybeSingle()
       if (porDni) return porDni.id
@@ -56,7 +58,7 @@ export default function NuevoPrestamo() {
     if (porNombre) return porNombre.id
 
     const { data: nuevo, error } = await supabase
-      .from('clientes').insert({ dni: dni || null, nombre: nombre.trim() }).select().single()
+      .from('clientes').insert({ dni: dni || null, nombre: nombre.trim(), tipo_documento: tipoDocumento || 'DNI' }).select().single()
     if (error) throw error
     return nuevo.id
   }
@@ -68,10 +70,10 @@ export default function NuevoPrestamo() {
       const cuentaRow = cuentasDisponibles.find((c) => c.nombre === cuenta)
       if (!cuentaRow) throw new Error('Selecciona una cuenta valida.')
 
-      const clienteId = await resolverPersona(clienteDni, clienteNombre)
+      const clienteId = await resolverPersona(clienteDni, clienteNombre, clienteTipoDoc)
       let avalId = null
       if (tieneAval && avalNombre.trim()) {
-        avalId = await resolverPersona(avalDni, avalNombre)
+        avalId = await resolverPersona(avalDni, avalNombre, avalTipoDoc)
       }
 
       const codigo = await siguienteCodigo(cuentaRow.id, cuentaRow.prefijo || cuenta.slice(0, 4).toUpperCase())
@@ -122,8 +124,8 @@ export default function NuevoPrestamo() {
         </label>
 
         <BuscadorPersona
-          label="Cliente" dni={clienteDni} nombre={clienteNombre}
-          onChangeDni={setClienteDni} onChangeNombre={setClienteNombre}
+          label="Cliente" dni={clienteDni} nombre={clienteNombre} tipoDocumento={clienteTipoDoc}
+          onChangeDni={setClienteDni} onChangeNombre={setClienteNombre} onChangeTipoDocumento={setClienteTipoDoc}
           personas={personas} required
         />
 
@@ -134,8 +136,8 @@ export default function NuevoPrestamo() {
 
         {tieneAval && (
           <BuscadorPersona
-            label="Aval / Recomendado" dni={avalDni} nombre={avalNombre}
-            onChangeDni={setAvalDni} onChangeNombre={setAvalNombre}
+            label="Aval / Recomendado" dni={avalDni} nombre={avalNombre} tipoDocumento={avalTipoDoc}
+            onChangeDni={setAvalDni} onChangeNombre={setAvalNombre} onChangeTipoDocumento={setAvalTipoDoc}
             personas={personas}
           />
         )}
