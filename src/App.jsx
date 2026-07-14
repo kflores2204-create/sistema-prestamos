@@ -2,10 +2,9 @@ import { useEffect, useState } from 'react'
 import { BrowserRouter, Routes, Route, NavLink, Navigate, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard, Wallet, Landmark, Users,
-  CalendarDays, RefreshCw, LogOut, UserCog, ClipboardCheck,
+  CalendarDays, LogOut, UserCog, ClipboardCheck,
 } from 'lucide-react'
 import { supabase, signOut } from './lib/supabase'
-import { syncTodo } from './lib/calendarSync'
 import { EmpresaProvider } from './lib/EmpresaContext'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
@@ -68,7 +67,7 @@ function UserProfile({ user }) {
   )
 }
 
-function Sidebar({ user, sincronizando, handleSync, sidebarOpen, setSidebarOpen }) {
+function Sidebar({ user, sidebarOpen, setSidebarOpen }) {
   const location = useLocation()
   const [confirmando, setConfirmando] = useState(false)
 
@@ -91,12 +90,6 @@ function Sidebar({ user, sincronizando, handleSync, sidebarOpen, setSidebarOpen 
             </NavLink>
           ))}
         </nav>
-        <div style={{ marginTop: 32, display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <button className="btn" onClick={handleSync} disabled={sincronizando}>
-            <RefreshCw size={16} strokeWidth={2.4} className={sincronizando ? 'spin' : ''} />
-            {sincronizando ? 'Sincronizando...' : 'Sincronizar Calendar'}
-          </button>
-        </div>
         <div className="sidebar-footer">
           <UserProfile user={user} />
           <button className="btn secondary" style={{ width: '100%' }} onClick={() => setConfirmando(true)}>
@@ -118,19 +111,8 @@ function Sidebar({ user, sincronizando, handleSync, sidebarOpen, setSidebarOpen 
 }
 
 function AppAutenticada({ session }) {
-  const [sincronizando, setSincronizando] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
-  async function handleSync() {
-    setSincronizando(true)
-    try {
-      const n = await syncTodo()
-      alert(`Listo. Se sincronizaron ${n} cuotas con Google Calendar. Busca el calendario "Cobros - Prestamos" en tu lista de calendarios (si es nuevo, puede que tengas que activarlo con el check en el panel izquierdo de Google Calendar).`)
-    } catch (err) {
-      alert('No se pudo sincronizar con Calendar:\n\n' + err.message)
-    }
-    setSincronizando(false)
-  }
 
   return (
     <div className="app-shell">
@@ -138,7 +120,7 @@ function AppAutenticada({ session }) {
         ☰
       </button>
       <Sidebar
-        user={session.user} sincronizando={sincronizando} handleSync={handleSync}
+        user={session.user}
         sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen}
       />
       <main className="main">
