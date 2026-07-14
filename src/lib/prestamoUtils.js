@@ -73,6 +73,44 @@ export function montoConRecargo(cuota, recargoPct) {
   return base
 }
 
+/**
+ * ============================================================
+ * Recargo segun la FECHA REAL DE PAGO (no segun "hoy").
+ * ============================================================
+ * Caso real: el cliente paga el dia que le toca (a tiempo), pero el pago se
+ * registra en el sistema uno o dos dias despues. Si el recargo se calculara
+ * con la fecha de HOY, ese cliente puntual quedaria marcado como atrasado y
+ * se le cobraria un recargo que no le corresponde.
+ *
+ * Por eso el recargo se decide comparando el VENCIMIENTO contra la FECHA EN
+ * QUE EL CLIENTE REALMENTE PAGO, no contra la fecha en que se registra.
+ */
+
+/** True si el pago llego DESPUES del vencimiento (comparacion por texto YYYY-MM-DD, sin Date). */
+export function atrasadaAlPagar(cuota, fechaPago) {
+  const venc = String(cuota.fecha_vencimiento).slice(0, 10)
+  const pago = String(fechaPago || hoyISO()).slice(0, 10)
+  return venc < pago
+}
+
+/** Dias de atraso entre el vencimiento y la fecha real de pago (0 si llego a tiempo). */
+export function diasAtraso(cuota, fechaPago) {
+  const venc = parseFechaLocal(cuota.fecha_vencimiento)
+  const pago = parseFechaLocal(fechaPago || hoyISO())
+  const dias = Math.round((pago - venc) / 86400000)
+  return dias > 0 ? dias : 0
+}
+
+/**
+ * Recargo que le corresponde a la cuota si se paga en `fechaPago`.
+ * Devuelve 0 si el cliente pago a tiempo o si el prestamo no tiene recargo.
+ */
+export function recargoPorPago(cuota, recargoPct, fechaPago) {
+  if (!recargoPct) return 0
+  if (!atrasadaAlPagar(cuota, fechaPago)) return 0
+  return Number((Number(cuota.monto) * Number(recargoPct)).toFixed(2))
+}
+
 /** Formatea un timestamp ISO completo (con hora, ej. columna pagado_en) a "DD/MM/YYYY HH:mm". */
 export function formatFechaHora(isoTimestamp) {
   if (!isoTimestamp) return ''
