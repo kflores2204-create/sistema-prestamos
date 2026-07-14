@@ -4,6 +4,7 @@ import { syncCuota } from '../lib/calendarSync'
 import { montoConRecargo, estaAtrasada, hoyISO, formatFecha } from '../lib/prestamoUtils'
 import { cambiarEstadoCuotaConAuditoria } from '../lib/cuotaPagos'
 import FechaInput from '../components/FechaInput'
+import PagoModal from '../components/PagoModal'
 
 const money = (n) => `S/. ${Number(n || 0).toLocaleString('es-PE', { minimumFractionDigits: 2 })}`
 
@@ -20,6 +21,7 @@ export default function Cobros() {
   const [incluirAtrasados, setIncluirAtrasados] = useState(true)
   const [cuotas, setCuotas] = useState([])
   const [cargando, setCargando] = useState(false)
+  const [pagando, setPagando] = useState(null)
 
   async function cargar() {
     setCargando(true)
@@ -45,10 +47,11 @@ export default function Cobros() {
 
   useEffect(() => { cargar() }, [fecha, incluirAtrasados])
 
-  async function marcarPagado(cuota) {
+  async function marcarPagado(cuota, opciones = {}) {
     const updated = await cambiarEstadoCuotaConAuditoria(
       cuota, 'Pagado', cuota.prestamos.recargo_pct,
-      `${cuota.prestamos.codigo} - ${cuota.prestamos.cliente?.nombre || 'Cliente'}`
+      `${cuota.prestamos.codigo} - ${cuota.prestamos.cliente?.nombre || 'Cliente'}`,
+      opciones
     )
     try {
       await syncCuota(updated, {
@@ -113,7 +116,7 @@ export default function Cobros() {
                 <td data-label="Interes">{money(interes)}</td>
                 <td data-label="Monto"><b>{money(montoConRecargo(c, c.prestamos.recargo_pct))}</b></td>
                 <td data-label="">
-                  <button className="btn" style={{ padding: '6px 14px', fontSize: 13 }} onClick={() => marcarPagado(c)}>
+                  <button className="btn" style={{ padding: '6px 14px', fontSize: 13 }} onClick={() => setPagando(c)}>
                     Marcar Pagado
                   </button>
                 </td>
@@ -125,6 +128,19 @@ export default function Cobros() {
           )}
         </tbody>
       </table>
+
+      {pagando && (
+        <PagoModal
+          cuota={pagando}
+          recargoPct={pagando.prestamos.recargo_pct}
+          titulo={`${pagando.prestamos.codigo} - ${pagando.prestamos.cliente?.nombre || 'Cliente'}`}
+          onClose={() => setPagando(null)}
+          onConfirmar={async ({ fechaPago, aplicarRecargo }) => {
+            await marcarPagado(pagando, { fechaPago, aplicarRecargo })
+            setPagando(null)
+          }}
+        />
+      )}
     </div>
   )
 }
