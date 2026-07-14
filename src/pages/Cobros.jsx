@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
-import { syncCuota } from '../lib/calendarSync'
 import { montoConRecargo, estaAtrasada, hoyISO, formatFecha } from '../lib/prestamoUtils'
 import { cambiarEstadoCuotaConAuditoria } from '../lib/cuotaPagos'
 import FechaInput from '../components/FechaInput'
@@ -48,22 +47,11 @@ export default function Cobros() {
   useEffect(() => { cargar() }, [fecha, incluirAtrasados])
 
   async function marcarPagado(cuota, opciones = {}) {
-    const updated = await cambiarEstadoCuotaConAuditoria(
+    await cambiarEstadoCuotaConAuditoria(
       cuota, 'Pagado', cuota.prestamos.recargo_pct,
       `${cuota.prestamos.codigo} - ${cuota.prestamos.cliente?.nombre || 'Cliente'}`,
       opciones
     )
-    try {
-      await syncCuota(updated, {
-        codigo: cuota.prestamos.codigo,
-        num_cuotas: cuota.prestamos.num_cuotas,
-        recargo_pct: cuota.prestamos.recargo_pct,
-        cliente_nombre: cuota.prestamos.cliente?.nombre || 'Cliente',
-        cuenta_nombre: cuota.prestamos.cuenta?.nombre || '',
-      })
-    } catch (err) {
-      alert('El pago se guardo, pero no se pudo sincronizar con Calendar: ' + err.message)
-    }
     cargar()
   }
 
