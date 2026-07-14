@@ -9,6 +9,7 @@ import MultiSelect from '../components/MultiSelect'
 import BuscadorFiltro from '../components/BuscadorFiltro'
 import EstadoSelect from '../components/EstadoSelect'
 import FechaInput from '../components/FechaInput'
+import PagoModal from '../components/PagoModal'
 
 const money = (n) => `S/. ${Number(n || 0).toLocaleString('es-PE', { minimumFractionDigits: 2 })}`
 const fechaCorta = formatFecha
@@ -21,6 +22,7 @@ export default function Prestamos() {
   const [prestamos, setPrestamos] = useState([])
   const [filtroEstados, setFiltroEstados] = useState(new Set(ESTADOS))
   const [busqueda, setBusqueda] = useState('')
+  const [pagando, setPagando] = useState(null)
   const [ordenFecha, setOrdenFecha] = useState('desc')
   const [expanded, setExpanded] = useState(null)
   const [cuotasDetalle, setCuotasDetalle] = useState([])
@@ -40,10 +42,21 @@ export default function Prestamos() {
     setEditando(false)
   }
 
-  async function cambiarEstadoCuota(cuota, nuevoEstado, prestamo) {
+  // Marcar como Pagado abre el modal (para poder indicar la fecha real de pago
+  // y decidir el recargo). Revertir a Pendiente es directo, no necesita modal.
+  function cambiarEstadoCuota(cuota, nuevoEstado, prestamo) {
+    if (nuevoEstado === 'Pagado') {
+      setPagando({ cuota, prestamo })
+      return
+    }
+    return aplicarEstadoCuota(cuota, nuevoEstado, prestamo)
+  }
+
+  async function aplicarEstadoCuota(cuota, nuevoEstado, prestamo, opciones = {}) {
     const updated = await cambiarEstadoCuotaConAuditoria(
       cuota, nuevoEstado, prestamo.recargo_pct,
-      `${prestamo.codigo} - ${prestamo.cliente}`
+      `${prestamo.codigo} - ${prestamo.cliente}`,
+      opciones
     )
     try {
       await syncCuota(updated, {
@@ -101,17 +114,32 @@ export default function Prestamos() {
         .single()
       if (errP) throw errP
 
-      // conserva TODO el historial de las cuotas que ya estaban Pagado (monto
-      // exacto cobrado, fecha real de pago, quien la marco, recargo) - editar
-      // el prestamo NUNCA debe borrar el rastro de un pago ya realizado.
-      const { data: cuotasActuales } = await supabase
+      // ============================================================
+      // Regeneracion NO DESTRUCTIVA del cronograma.
+      // ============================================================
+      // Antes esto borraba TODAS las cuotas y las volvia a insertar. Eso tenia
+      // dos fallas graves:
+      //   1. El insert mandaba objetos con forma distinta (las pagadas traian
+      //      monto_recargo, las pendientes no). PostgREST rellena los campos
+      //      faltantes con NULL, y monto_recargo es NOT NULL -> el insert
+      //      fallaba entero (error 400). Como el DELETE ya se habia ejecutado,
+      //      el prestamo quedaba SIN NINGUNA CUOTA (pantalla en blanco), y al
+      //      volver a guardar todo renacia como "Pendiente": se perdian los pagos.
+      //   2. Borrar la fila de una cuota pagada tambien rompia el vinculo con su
+      //      movimiento de recargo en Intereses, dejando ese ingreso huerfano.
+      //
+      // Ahora: las cuotas YA PAGADAS no se tocan nunca. Solo se actualizan las
+      // pendientes, se insertan las que falten y se borran las que sobren.
+      const { data: cuotasActuales, error: errCuotas } = await supabase
         .from('cuotas').select('*').eq('prestamo_id', expanded.id)
-      const cuotasPagadasPorNumero = new Map(
-        (cuotasActuales || []).filter((c) => c.estado === 'Pagado').map((c) => [c.numero_cuota, c])
-      )
+      if (errCuotas) throw errCuotas
 
+      const porNumero = new Map((cuotasActuales || []).map((c) => [c.numero_cuota, c]))
       const numCuotasNuevo = Number(formEdit.num_cuotas)
-      const sePerderian = [...cuotasPagadasPorNumero.keys()].filter((n) => n > numCuotasNuevo)
+
+      const sePerderian = (cuotasActuales || [])
+        .filter((c) => c.estado === 'Pagado' && c.numero_cuota > numCuotasNuevo)
+        .map((c) => c.numero_cuota)
       if (sePerderian.length > 0) {
         const ok = confirm(
           `Advertencia: reducir a ${numCuotasNuevo} cuotas va a eliminar el pago ya registrado en la(s) cuota(s) ${sePerderian.join(', ')}. Continuar de todas formas?`
@@ -119,33 +147,52 @@ export default function Prestamos() {
         if (!ok) { setGuardando(false); return }
       }
 
+      // 1. Cuotas nuevas: se insertan con TODAS las columnas explicitas (misma
+      //    forma en todos los objetos), para que PostgREST no meta NULLs.
       const nuevasCuotas = []
       for (let n = 1; n <= numCuotasNuevo; n++) {
-        const pagadaAntes = cuotasPagadasPorNumero.get(n)
-        if (pagadaAntes) {
+        const existente = porNumero.get(n)
+        const vencimiento = fechaCuota(formEdit.fecha_prestamo, n, formEdit.frecuencia)
+
+        if (!existente) {
           nuevasCuotas.push({
             prestamo_id: expanded.id, numero_cuota: n,
-            fecha_vencimiento: pagadaAntes.fecha_vencimiento,
-            monto: pagadaAntes.monto,
-            estado: 'Pagado',
-            fecha_pago: pagadaAntes.fecha_pago,
-            pagado_en: pagadaAntes.pagado_en,
-            pagado_por: pagadaAntes.pagado_por,
-            monto_recargo: pagadaAntes.monto_recargo,
-            movimiento_recargo_id: pagadaAntes.movimiento_recargo_id,
-          })
-        } else {
-          nuevasCuotas.push({
-            prestamo_id: expanded.id, numero_cuota: n,
-            fecha_vencimiento: fechaCuota(formEdit.fecha_prestamo, n, formEdit.frecuencia),
+            fecha_vencimiento: vencimiento,
             monto: prestamoActualizado.monto_cuota,
             estado: 'Pendiente',
+            fecha_pago: null, pagado_en: null, pagado_por: null,
+            monto_recargo: 0, movimiento_recargo_id: null,
           })
+        } else if (existente.estado !== 'Pagado') {
+          // 2. Pendientes: se actualizan en el sitio (no se borran).
+          const { error: errUpd } = await supabase.from('cuotas')
+            .update({ fecha_vencimiento: vencimiento, monto: prestamoActualizado.monto_cuota })
+            .eq('id', existente.id)
+          if (errUpd) throw errUpd
         }
+        // 3. Pagadas: NO SE TOCAN. Su monto, su fecha real de pago, quien la
+        //    cobro y su recargo quedan intactos.
       }
 
-      await supabase.from('cuotas').delete().eq('prestamo_id', expanded.id)
-      await supabase.from('cuotas').insert(nuevasCuotas)
+      if (nuevasCuotas.length > 0) {
+        const { error: errIns } = await supabase.from('cuotas').insert(nuevasCuotas)
+        if (errIns) throw errIns
+      }
+
+      // 4. Cuotas que sobran (si se redujo el numero de cuotas): se borran, pero
+      //    limpiando antes su movimiento de recargo para no dejarlo huerfano
+      //    inflando la cuenta de Intereses.
+      const sobrantes = (cuotasActuales || []).filter((c) => c.numero_cuota > numCuotasNuevo)
+      for (const c of sobrantes) {
+        if (c.movimiento_recargo_id) {
+          await supabase.from('movimientos_caja').delete().eq('id', c.movimiento_recargo_id)
+        }
+      }
+      if (sobrantes.length > 0) {
+        const { error: errDel } = await supabase.from('cuotas')
+          .delete().eq('prestamo_id', expanded.id).gt('numero_cuota', numCuotasNuevo)
+        if (errDel) throw errDel
+      }
 
       await cargar()
       await abrirDetalle(expanded.id)
@@ -381,6 +428,19 @@ export default function Prestamos() {
             )}
           </div>
         </>
+      )}
+
+      {pagando && (
+        <PagoModal
+          cuota={pagando.cuota}
+          recargoPct={pagando.prestamo.recargo_pct}
+          titulo={`${pagando.prestamo.codigo} - ${pagando.prestamo.cliente}`}
+          onClose={() => setPagando(null)}
+          onConfirmar={async ({ fechaPago, aplicarRecargo }) => {
+            await aplicarEstadoCuota(pagando.cuota, 'Pagado', pagando.prestamo, { fechaPago, aplicarRecargo })
+            setPagando(null)
+          }}
+        />
       )}
     </div>
   )
