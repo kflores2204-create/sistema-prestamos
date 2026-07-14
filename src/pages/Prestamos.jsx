@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { Pencil, Trash2, FileText, ChevronLeft } from 'lucide-react'
 import { supabase } from '../lib/supabase'
-import { syncCuota } from '../lib/calendarSync'
 import { FRECUENCIAS, fechaCuota, montoConRecargo, tieneRecargoAplicado, estaAtrasada, formatFecha, formatFechaHora, hoyISO } from '../lib/prestamoUtils'
 import { cambiarEstadoCuotaConAuditoria } from '../lib/cuotaPagos'
 import MultiSelect from '../components/MultiSelect'
@@ -53,20 +52,11 @@ export default function Prestamos() {
   }
 
   async function aplicarEstadoCuota(cuota, nuevoEstado, prestamo, opciones = {}) {
-    const updated = await cambiarEstadoCuotaConAuditoria(
+    await cambiarEstadoCuotaConAuditoria(
       cuota, nuevoEstado, prestamo.recargo_pct,
       `${prestamo.codigo} - ${prestamo.cliente}`,
       opciones
     )
-    try {
-      await syncCuota(updated, {
-        codigo: prestamo.codigo, num_cuotas: prestamo.num_cuotas,
-        cliente_nombre: prestamo.cliente, cuenta_nombre: prestamo.cuenta,
-        recargo_pct: prestamo.recargo_pct,
-      })
-    } catch (err) {
-      alert('El pago se guardo, pero no se pudo sincronizar con Calendar: ' + err.message)
-    }
     cargar()
     abrirDetalle(expanded.id)
   }
