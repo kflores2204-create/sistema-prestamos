@@ -27,10 +27,10 @@ export default function FlujoCaja() {
       // (foto en tiempo real, no depende del saldo inicial ni de fechas)
       const { data: prestamos } = await supabase
         .from('v_prestamo_resumen')
-        .select('capital, num_cuotas, cuotas_pagadas')
+        .select('capital, total_a_pagar, pagado_hasta_hoy')
         .eq('cuenta', cuentaNombre)
       const pendiente = (prestamos || []).reduce((acc, p) => {
-        const pagado = (p.cuotas_pagadas / p.num_cuotas) * p.capital
+        const pagado = p.total_a_pagar > 0 ? (p.pagado_hasta_hoy / p.total_a_pagar) * p.capital : 0
         return acc + (p.capital - pagado)
       }, 0)
       setCapitalPendiente(pendiente)
