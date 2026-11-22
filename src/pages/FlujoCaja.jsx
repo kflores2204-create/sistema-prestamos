@@ -1,19 +1,29 @@
-import { useEffect, useState } from 'react'
+import { Fragment, useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { ChevronLeft } from 'lucide-react'
+import { ChevronLeft, Pencil, Trash2, Download } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { hoyISO, formatFecha } from '../lib/prestamoUtils'
 import FechaInput from '../components/FechaInput'
 
 const money = (n) => `S/. ${Number(n || 0).toLocaleString('es-PE', { minimumFractionDigits: 2 })}`
 
+// Un movimiento de recargo por atraso (o vinculado a una cuota) no se edita ni
+// se elimina desde aqui: si se borra, la cuota queda desincronizada. Se protege.
+const esRecargo = (m, protegidos) =>
+  (m.detalle || '').startsWith('Recargo por atraso') || protegidos.has(m.id)
+
+const escCSV = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`
+
 export default function FlujoCaja() {
   const { cuenta: cuentaNombre } = useParams()
   const [cuenta, setCuenta] = useState(null)
   const [movimientos, setMovimientos] = useState([])
+  const [protegidos, setProtegidos] = useState(new Set())
   const [capitalPendiente, setCapitalPendiente] = useState(0)
   const [nuevo, setNuevo] = useState({ fecha: hoyISO(), tipo: 'egreso', monto: '', detalle: '' })
   const [guardando, setGuardando] = useState(false)
+  const [editandoId, setEditandoId] = useState(null)
+  const [edicion, setEdicion] = useState({ fecha: '', tipo: 'egreso', monto: '', detalle: '' })
 
   async function cargar() {
     const { data: c } = await supabase.from('v_saldo_cuentas').select('*').eq('nombre', cuentaNombre).single()
@@ -21,7 +31,18 @@ export default function FlujoCaja() {
     if (c) {
       const { data: mov } = await supabase
         .from('movimientos_caja').select('*').eq('cuenta_id', c.id).order('fecha', { ascending: false })
-      setMovimientos(mov || [])
+      const lista = mov || []
+      setMovimientos(lista)
+
+      // movimientos que estan vinculados a una cuota como recargo
+      const ids = lista.map((m) => m.id)
+      let prot = new Set()
+      if (ids.length) {
+        const { data: cu } = await supabase
+          .from('cuotas').select('movimiento_recargo_id').in('movimiento_recargo_id', ids)
+        prot = new Set((cu || []).map((x) => x.movimiento_recargo_id))
+      }
+      setProtegidos(prot)
 
       // capital que sigue afuera con clientes, en TODOS los prestamos de esta cuenta
       // (foto en tiempo real, no depende del saldo inicial ni de fechas)
@@ -49,6 +70,63 @@ export default function FlujoCaja() {
     setNuevo({ fecha: hoyISO(), tipo: 'egreso', monto: '', detalle: '' })
     setGuardando(false)
     cargar()
+  }
+
+  function iniciarEdicion(m) {
+    const monto = Number(m.monto)
+    setEditandoId(m.id)
+    setEdicion({
+      fecha: m.fecha,
+      tipo: monto < 0 ? 'egreso' : 'ingreso',
+      monto: String(Math.abs(monto)),
+      detalle: m.detalle || '',
+    })
+  }
+
+  function cancelarEdicion() {
+    setEditandoId(null)
+  }
+
+  async function guardarEdicion(e) {
+    e.preventDefault()
+    const monto = edicion.tipo === 'ingreso' ? Math.abs(Number(edicion.monto)) : -Math.abs(Number(edicion.monto))
+    const { error } = await supabase.from('movimientos_caja')
+      .update({ fecha: edicion.fecha, monto, detalle: edicion.detalle })
+      .eq('id', editandoId)
+    if (error) return alert('Error al guardar: ' + error.message)
+    setEditandoId(null)
+    cargar()
+  }
+
+  async function eliminarMovimiento(m) {
+    const ok = window.confirm(
+      `¿Eliminar este movimiento?\n\n${formatFecha(m.fecha)} · ${money(m.monto)} · ${m.detalle || ''}\n\nEsta accion no se puede deshacer.`
+    )
+    if (!ok) return
+    const { error } = await supabase.from('movimientos_caja').delete().eq('id', m.id)
+    if (error) return alert('Error al eliminar: ' + error.message)
+    cargar()
+  }
+
+  function exportarCSV() {
+    const cabecera = ['Fecha', 'Tipo', 'Monto', 'Detalle'].map(escCSV).join(';')
+    const filas = movimientos.map((m) => [
+      m.fecha,
+      Number(m.monto) < 0 ? 'Egreso' : 'Ingreso',
+      Math.abs(Number(m.monto)).toFixed(2).replace('.', ','),
+      m.detalle,
+    ].map(escCSV).join(';'))
+    // BOM para que Excel reconozca los acentos y las tildes
+    const contenido = '﻿' + [cabecera, ...filas].join('\r\n')
+    const blob = new Blob([contenido], { type: 'text/csv;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `movimientos_${cuenta.nombre.trim().replace(/\s+/g, '_')}_${hoyISO()}.csv`
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+    URL.revokeObjectURL(url)
   }
 
   if (!cuenta) return <p style={{ color: 'var(--muted)' }}>Cargando...</p>
@@ -142,19 +220,84 @@ export default function FlujoCaja() {
         <button className="btn" type="submit" disabled={guardando}>{guardando ? 'Guardando...' : 'Agregar'}</button>
       </form>
 
-      <h3 style={{ color: 'var(--navy)' }}>Movimientos</h3>
-      <table className="table-cards">
-        <thead><tr><th>Fecha</th><th>Monto</th><th>Detalle</th></tr></thead>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+        <h3 style={{ color: 'var(--navy)', margin: 0 }}>Movimientos</h3>
+        <button className="btn secondary" type="button" onClick={exportarCSV} disabled={movimientos.length === 0}>
+          <Download size={16} strokeWidth={2.4} /> Exportar a Excel (CSV)
+        </button>
+      </div>
+      <table className="table-cards" style={{ marginTop: 12 }}>
+        <thead><tr><th>Fecha</th><th>Monto</th><th>Detalle</th><th>Acciones</th></tr></thead>
         <tbody>
-          {movimientos.map((m) => (
-            <tr key={m.id}>
-              <td data-label="Fecha">{formatFecha(m.fecha)}</td>
-              <td data-label="Monto" style={{ color: Number(m.monto) < 0 ? 'var(--red)' : 'var(--green)' }}>{money(m.monto)}</td>
-              <td data-label="Detalle">{m.detalle}</td>
-            </tr>
-          ))}
+          {movimientos.map((m) => {
+            const protegido = esRecargo(m, protegidos)
+            const enEdicion = editandoId === m.id
+            return (
+              <Fragment key={m.id}>
+                <tr>
+                  <td data-label="Fecha">{formatFecha(m.fecha)}</td>
+                  <td data-label="Monto" style={{ color: Number(m.monto) < 0 ? 'var(--red)' : 'var(--green)' }}>{money(m.monto)}</td>
+                  <td data-label="Detalle">
+                    {m.detalle}
+                    {protegido && (
+                      <span style={{ display: 'block', fontSize: 11, color: 'var(--muted)' }}>
+                        Recargo ligado a una cuota: no editable desde aqui
+                      </span>
+                    )}
+                  </td>
+                  <td data-label="Acciones" style={{ whiteSpace: 'nowrap' }}>
+                    <button
+                      className="btn secondary"
+                      type="button"
+                      title={protegido ? 'Bloqueado: recargo ligado a una cuota' : 'Editar'}
+                      disabled={protegido || enEdicion}
+                      onClick={() => iniciarEdicion(m)}
+                      style={{ padding: '4px 10px', fontSize: 13, marginRight: 6 }}
+                    >
+                      <Pencil size={14} strokeWidth={2.4} /> Editar
+                    </button>
+                    <button
+                      className="btn secondary"
+                      type="button"
+                      title={protegido ? 'Bloqueado: recargo ligado a una cuota' : 'Eliminar'}
+                      disabled={protegido}
+                      onClick={() => eliminarMovimiento(m)}
+                      style={{ padding: '4px 10px', fontSize: 13, color: 'var(--red)' }}
+                    >
+                      <Trash2 size={14} strokeWidth={2.4} /> Eliminar
+                    </button>
+                  </td>
+                </tr>
+                {enEdicion && (
+                  <tr>
+                    <td colSpan={4} style={{ background: 'var(--surface-2, #f7f7f9)' }}>
+                      <form onSubmit={guardarEdicion} style={{ display: 'flex', gap: 12, alignItems: 'end', flexWrap: 'wrap', padding: '8px 0' }}>
+                        <label>Tipo
+                          <select className="input" value={edicion.tipo} onChange={(e) => setEdicion((d) => ({ ...d, tipo: e.target.value }))}>
+                            <option value="egreso">Egreso / Retiro</option>
+                            <option value="ingreso">Ingreso manual</option>
+                          </select>
+                        </label>
+                        <label>Fecha
+                          <FechaInput required value={edicion.fecha} onChange={(v) => setEdicion((d) => ({ ...d, fecha: v }))} />
+                        </label>
+                        <label>Monto (S/.)
+                          <input className="input" type="number" min="0" step="0.01" required value={edicion.monto} onChange={(e) => setEdicion((d) => ({ ...d, monto: e.target.value }))} />
+                        </label>
+                        <label>Detalle
+                          <input className="input" required value={edicion.detalle} onChange={(e) => setEdicion((d) => ({ ...d, detalle: e.target.value }))} />
+                        </label>
+                        <button className="btn" type="submit">Guardar cambios</button>
+                        <button className="btn secondary" type="button" onClick={cancelarEdicion}>Cancelar</button>
+                      </form>
+                    </td>
+                  </tr>
+                )}
+              </Fragment>
+            )
+          })}
           {movimientos.length === 0 && (
-            <tr><td data-label="" colSpan={3} style={{ textAlign: 'center', color: 'var(--muted)' }}>Sin movimientos registrados.</td></tr>
+            <tr><td data-label="" colSpan={4} style={{ textAlign: 'center', color: 'var(--muted)' }}>Sin movimientos registrados.</td></tr>
           )}
         </tbody>
       </table>
